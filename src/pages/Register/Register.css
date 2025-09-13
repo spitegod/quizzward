@@ -21,14 +21,13 @@
 }
 
 .auth-links {
+    text-decoration: none;
     margin-top: 30px;
     display: flex;
     gap: 10px;
 }
 
 .auth-link {
-    color: #C4DFE6;
-    text-decoration: none;
     font-size: 1.3rem;
 }
 
@@ -36,7 +35,7 @@
     cursor: pointer;
 }
 
-.auth-link.active {
+.active {
     color: white;
 }
 

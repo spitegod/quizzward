@@ -1,27 +1,27 @@
 import { Link } from "react-router-dom";
-import "./Login.css";
+import "./Register.css";
 
-function Login() {
+function Register() {
     return (
         <div className="login-page">
             <div className="login-container">
                 <div className="auth-links">
-                    <Link to="/login" className="auth-link active">Вход</Link>
-                    <Link to="/register" className="auth-link">Регистрация</Link>
+                    <Link to="/login" className="auth-link">Вход</Link>
+                    <Link to="/register" className="auth-link active">Регистрация</Link>
                 </div>
                 <div className="company-name">
                     Quizzward
                 </div>
                 <div className="login-inputs">
                     <input type="text" className="input-login" placeholder="Логин" />
-                    <input type="password" className="input input-password" placeholder="Пароль" />
+                    <input type="password" className="input-password" placeholder="Пароль" />
                 </div>
                 <button className="button-login">
-                    Войти
+                    Регистрация
                 </button>
             </div>
         </div>
     )
 }
 
-export default Login
+export default Register

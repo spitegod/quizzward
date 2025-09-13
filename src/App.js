@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import logo from './logo.svg';
 import './App.css';
-import LoginPage from "./pages/Login/Login";
+import Login from "./pages/Login/Login";
+import Register from "./pages/Register/Register";
 
 function App() {
   return (
@@ -13,7 +14,11 @@ function App() {
         />
         <Route
           path="/login"
-          element={<LoginPage />}
+          element={<Login />}
+        />
+        <Route
+          path="/register"
+          element={<Register />}
         />
       </Routes>
     </BrowserRouter>
