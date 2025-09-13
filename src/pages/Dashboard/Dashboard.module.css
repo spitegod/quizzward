@@ -1,0 +1,38 @@
+.dashboardContainer {
+    background-color: #66a5ad;
+    height: 100vh;
+    width: 100%;
+
+}
+
+.dashboardContent {
+    padding: 0 30px;
+    box-sizing: border-box;
+}
+
+.navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 50px;
+    background-color: #07575b;
+    box-sizing: border-box;
+    border-bottom: 2px solid #c4dfe6;
+}
+
+.navLink {
+    font-size: 1.1rem;
+    text-decoration: none;
+    color: #C4DFE6;
+}
+
+.dashboardMainText {
+    font-size: 2rem;
+    color:#07575b;
+}
+
+.myQuizzes {
+    font-size: 1.1rem;
+    color:#07575b;
+}
