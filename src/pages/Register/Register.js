@@ -1,22 +1,22 @@
 import { Link } from "react-router-dom";
-import "./Register.css";
+import s from "./Register.module.css";
 
 function Register() {
     return (
-        <div className="login-page">
-            <div className="login-container">
-                <div className="auth-links">
-                    <Link to="/login" className="auth-link">Вход</Link>
-                    <Link to="/register" className="auth-link active">Регистрация</Link>
+        <div className={s.loginPage}>
+            <div className={s.loginContainer}>
+                <div className={s.authLinks}>
+                    <Link to="/login" className={`${s.authLink} ${s.active}`}>Вход</Link>
+                    <Link to="/register" className={s.authLink}>Регистрация</Link>
                 </div>
-                <div className="company-name">
+                <div className={s.companyName}>
                     Quizzward
                 </div>
-                <div className="login-inputs">
-                    <input type="text" className="input-login" placeholder="Логин" />
-                    <input type="password" className="input-password" placeholder="Пароль" />
+                <div className={s.loginInputs}>
+                    <input type="text" className={s.inputLogin} placeholder="Логин" />
+                    <input type="password" className={`${s.input} ${s.inputPassword}`} placeholder="Пароль" />
                 </div>
-                <button className="button-login">
+                <button className={s.buttonLogin}>
                     Регистрация
                 </button>
             </div>
