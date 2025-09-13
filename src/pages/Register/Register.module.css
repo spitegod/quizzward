@@ -1,0 +1,89 @@
+.loginPage {
+    background-color: #003B46;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #C4DFE6;
+}
+
+.loginContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    height: 400px;
+    width: 300px;
+    border: 2px solid #66A5AD;
+    border-radius: 15px;
+    background-color: #07575B;
+}
+
+.authLinks {
+    margin-top: 30px;
+    display: flex;
+    gap: 10px;
+}
+
+.authLink {
+    color: #C4DFE6;
+    text-decoration: none;
+    font-size: 1.3rem;
+}
+
+.authLink:hover {
+    cursor: pointer;
+}
+
+.authLink.active {
+    color: white;
+}
+
+.companyName {
+    margin-top: 60px;
+    margin-bottom: 10px;
+    font-size: 2.5rem;
+}
+
+.loginInputs {
+    display: flex;
+    flex-direction: column;
+}
+
+input {
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    background-color: #c4dfe6;
+    border: 2px solid #66a5ad;
+    border-radius: 15px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+input:focus {
+    transform: scale(1.05);
+}
+
+button {
+    margin: 10px;
+    font-size: 1.3rem;
+    padding: 10px 30px;
+    color: #07575B;
+    background-color: #c4dfe6;
+    border: 2px solid #66A5AD;
+    border-radius: 15px;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: #b0d7df;
+    border-color: #2a9d8f;
+    transform: scale(1.05);
+    color: #003B46;
+}
+
+button:active {
+    transform: scale(0.98);
+    background-color: #99c3cc;
+}

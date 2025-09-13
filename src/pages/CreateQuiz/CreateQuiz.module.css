@@ -1,0 +1,17 @@
+.quizContainer {
+    background-color: #66a5ad;
+    height: 100vh;
+    width: 100%;
+
+}
+
+.quizContent {
+    padding: 0 30px;
+    box-sizing: border-box;
+}
+
+.questionBlock {
+    display: flex;
+    gap: 20px; /* расстояние между всеми элементами внутри блока */
+    margin-bottom: 20px; /* расстояние между блоками вопросов */
+}
