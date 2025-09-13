@@ -1,7 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import s from "./Login.module.css";
 
+
 function Login() {
+    const navigate = useNavigate();
+    
+    const handleLogin = () => {
+        navigate("/dashboard")
+    }
     return (
         <div className={s.loginPage}>
             <div className={s.loginContainer}>
@@ -16,7 +22,7 @@ function Login() {
                     <input type="text" className={s.inputLogin} placeholder="Логин" />
                     <input type="password" className={`${s.input} ${s.inputPassword}`} placeholder="Пароль" />
                 </div>
-                <button className={s.buttonLogin}>
+                <button onClick={handleLogin} className={s.buttonLogin}>
                     Войти
                 </button>
             </div>
