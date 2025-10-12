@@ -14,3 +14,8 @@
     text-decoration: none;
     color: #C4DFE6;
 }
+
+.navLeft {
+    display: flex;
+    gap: 15px;
+}

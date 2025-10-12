@@ -6,6 +6,7 @@ import Register from "./pages/Register/Register";
 import Dashboard from "./pages/Dashboard/Dashboard"
 import CreateQuiz from "./pages/CreateQuiz/CreateQuiz";
 import PlayQuiz from "./pages/PlayQuiz/PlayQuiz";
+import Profile from "./pages/Profile/Profile";
 
 function App() {
   return (
@@ -26,6 +27,10 @@ function App() {
         <Route
           path="/dashboard"
           element={<Dashboard />}
+        />
+        <Route
+          path="/profile"
+          element={<Profile />}
         />
         <Route
           path="/create-quiz"

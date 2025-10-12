@@ -6,6 +6,7 @@ function Nav() {
         <nav className={s.navigation}>
             <div className={s.navLeft}>
                 <Link to="/dashboard" className={`${s.navLink} ${s.active}`}>Главная</Link>
+                <Link to="/profile" className={s.navLink}>Профиль</Link>
             </div>
             <Link to="/login" className={s.navLink}>Выйти</Link>
         </nav>
