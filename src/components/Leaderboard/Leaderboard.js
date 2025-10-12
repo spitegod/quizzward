@@ -1,12 +1,16 @@
+import s from './Leaderboard.module.css'
+
 const Leaderboard = () => {
     return (
-        <div>
-            <h3>Таблица лидеров</h3>
-            <table>
+        <div className={s.wrapper}>
+            <h3 className={s.title}>Таблица лидеров</h3>
+            <table className={s.table}>
                 <thead>
-                    <th>№</th>
-                    <th>Пользователь</th>
-                    <th>Очки</th>
+                    <tr>
+                        <th>№</th>
+                        <th>Пользователь</th>
+                        <th>Очки</th>
+                    </tr>
                 </thead>
                 <tbody>
                     <tr>
@@ -34,7 +38,7 @@ const Leaderboard = () => {
                         <td>michael</td>
                         <td>60</td>
                     </tr>
-                    <tr>
+                    <tr className={s.you}>
                         <td>49</td>
                         <td>You</td>
                         <td>3</td>
@@ -42,6 +46,7 @@ const Leaderboard = () => {
                 </tbody>
             </table>
         </div>
+
     )
 }
 

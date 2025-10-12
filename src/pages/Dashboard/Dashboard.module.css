@@ -1,6 +1,6 @@
 .dashboardContainer {
     background-color: #66a5ad;
-    height: 100vh;
+    min-height: 100vh;
     width: 100%;
 
 }
@@ -9,8 +9,6 @@
     padding: 0 30px;
     box-sizing: border-box;
 }
-
-
 
 .dashboardMainText {
     font-size: 2rem;
