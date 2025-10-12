@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import s from "./Dashboard.module.css"
 import Nav from "../../components/Nav/Nav";
 import { useEffect, useState } from "react";
+import Leaderboard from "../../components/Leaderboard/Leaderboard";
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -17,6 +18,7 @@ function Dashboard() {
             <Nav />
             <div className={s.dashboardContent}>
                 <h2 className={s.dashboardMainText}>Главная страница</h2>
+                <Leaderboard />
                 <button onClick={() => navigate("/create-quiz")} className={s.buttonCreate}>Создать викторину</button>
 
                 <h3 className={s.myQuizzes}>Мои викторины</h3>
