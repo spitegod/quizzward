@@ -2,7 +2,7 @@ import s from './Leaderboard.module.css'
 
 const Leaderboard = () => {
     return (
-        <div className={s.wrapper}>
+        <div>
             <h3 className={s.title}>Таблица лидеров</h3>
             <table className={s.table}>
                 <thead>
