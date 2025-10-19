@@ -12,8 +12,31 @@ const dbPath = path.resolve(__dirname, 'users.db');
 const db = new sqlite3.Database(dbPath);
 const SECRET_KEY = process.env.SECRET_KEY || 'default_secret';
 
+// Настройка CORS
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+// Применяем CORS ко всем маршрутам
+app.use(cors(corsOptions));
+
+// Разрешаем pre-flight запросы для всех маршрутов
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', true);
+    return res.status(200).end();
+  }
+  next();
+});
+
 app.use(bodyParser.json());
-app.use(cors());
 
 // Инициализация таблиц
 function initDB() {
@@ -47,6 +70,23 @@ function initDB() {
     points INTEGER DEFAULT 1,
     FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
   )`);
+
+  // Добавляем поле points в таблицу users, если оно не существует
+  db.all("PRAGMA table_info(users)", [], (err, columns) => {
+    if (err) return console.error('Ошибка при проверке структуры таблицы users:', err);
+    
+    const hasPointsColumn = columns && Array.isArray(columns) && 
+      columns.some(col => col.name === 'points');
+      
+    if (!hasPointsColumn) {
+      db.run('ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0', (err) => {
+        if (err) return console.error('Ошибка при добавлении поля points:', err);
+        console.log('Добавлено поле points в таблицу users');
+      });
+    } else {
+      console.log('Поле points уже существует в таблице users');
+    }
+  });
 }
 
 initDB();
@@ -123,6 +163,76 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+
+// Получение таблицы лидеров
+app.get('/leaderboard', authenticateToken, (req, res) => {
+  // Получаем топ-5 пользователей по очкам
+  db.all(
+    `SELECT id, login, points 
+     FROM users 
+     ORDER BY points DESC 
+     LIMIT 5`,
+    [],
+    (err, topUsers) => {
+      if (err) {
+        console.error('Ошибка при получении топ-5 пользователей:', err);
+        return res.status(500).json({ message: 'Ошибка сервера' });
+      }
+
+      // Получаем данные текущего пользователя
+      db.get(
+        'SELECT id, login, points FROM users WHERE id = ?',
+        [req.user.id],
+        (err, currentUser) => {
+          if (err) {
+            console.error('Ошибка при получении данных текущего пользователя:', err);
+            return res.status(500).json({ message: 'Ошибка сервера' });
+          }
+
+          // Проверяем, находится ли текущий пользователь в топ-5
+          const isInTop = topUsers.some(user => user.id === currentUser.id);
+          
+          // Если пользователь не в топ-5, получаем его позицию в общем рейтинге
+          let userRank = null;
+          if (!isInTop && currentUser) {
+            db.get(
+              `SELECT COUNT(*) + 1 as rank 
+               FROM users 
+               WHERE points > ?`,
+              [currentUser.points],
+              (err, result) => {
+                if (err) {
+                  console.error('Ошибка при получении ранга пользователя:', err);
+                  return res.status(500).json({ message: 'Ошибка сервера' });
+                }
+                userRank = result.rank;
+                
+                // Отправляем ответ с топ-5 и данными текущего пользователя
+                res.json({
+                  topUsers,
+                  currentUser: {
+                    ...currentUser,
+                    rank: userRank
+                  }
+                });
+              }
+            );
+          } else {
+            // Если пользователь в топ-5, просто отправляем данные
+            const currentUserInTop = topUsers.find(user => user.id === currentUser.id);
+            res.json({
+              topUsers,
+              currentUser: {
+                ...currentUser,
+                rank: topUsers.indexOf(currentUserInTop) + 1
+              }
+            });
+          }
+        }
+      );
+    }
+  );
+});
 
 // Пример защищённого маршрута
 app.get('/profile', authenticateToken, (req, res) => {

@@ -1,6 +1,54 @@
-import s from './Leaderboard.module.css'
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import s from './Leaderboard.module.css';
 
 const Leaderboard = () => {
+    const [leaderboardData, setLeaderboardData] = useState({
+        topUsers: [],
+        currentUser: null,
+        loading: true,
+        error: null
+    });
+
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                const response = await axios.get('http://localhost:4000/leaderboard', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    withCredentials: true
+                });
+
+                setLeaderboardData({
+                    topUsers: response.data.topUsers || [],
+                    currentUser: response.data.currentUser,
+                    loading: false,
+                    error: null
+                });
+            } catch (error) {
+                console.error('Ошибка при загрузке таблицы лидеров:', error);
+                setLeaderboardData(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: 'Не удалось загрузить таблицу лидеров'
+                }));
+            }
+        };
+
+        fetchLeaderboard();
+    }, []);
+
+    const { topUsers, currentUser, loading, error } = leaderboardData;
+    const isCurrentUserInTop = currentUser && topUsers.some(user => user.id === currentUser.id);
+
+    if (loading) return <div>Загрузка таблицы лидеров...</div>;
+    if (error) return <div className={s.error}>{error}</div>;
+
     return (
         <div>
             <h3 className={s.title}>Таблица лидеров</h3>
@@ -13,41 +61,24 @@ const Leaderboard = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>spitegod</td>
-                        <td>100</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>denis</td>
-                        <td>99</td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>pavel</td>
-                        <td>80</td>
-                    </tr>
-                    <tr>
-                        <td>4</td>
-                        <td>anatoliy</td>
-                        <td>70</td>
-                    </tr>
-                    <tr>
-                        <td>5</td>
-                        <td>michael</td>
-                        <td>60</td>
-                    </tr>
-                    <tr className={s.you}>
-                        <td>49</td>
-                        <td>You</td>
-                        <td>3</td>
-                    </tr>
+                    {topUsers.map((user, index) => (
+                        <tr key={user.id} className={currentUser && user.id === currentUser.id ? s.you : ''}>
+                            <td>{index + 1}</td>
+                            <td>{user.login}</td>
+                            <td>{user.points}</td>
+                        </tr>
+                    ))}
+                    {currentUser && !isCurrentUserInTop && (
+                        <tr className={s.you}>
+                            <td>{currentUser.rank}</td>
+                            <td>Вы</td>
+                            <td>{currentUser.points}</td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </div>
+    );
+};
 
-    )
-}
-
-export default Leaderboard
+export default Leaderboard;

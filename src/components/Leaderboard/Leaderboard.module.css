@@ -9,24 +9,29 @@
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
+  min-height: 300px;
+  justify-content: center;
 }
 
 .title {
   color: #07575b;
   font-weight: 700;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   text-align: center;
+  font-size: 1.5rem;
 }
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   border-radius: 15px;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(7, 87, 91, 0.1);
+  box-shadow: 0 2px 15px rgba(7, 87, 91, 0.1);
+  margin-bottom: 1rem;
 }
 
 .table thead tr {
@@ -35,19 +40,74 @@
   text-align: left;
 }
 
-.table th,
+.table th {
+  padding: 1rem 1.2rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
 .table td {
   padding: 0.8rem 1.2rem;
   text-align: left;
+  border-bottom: 1px solid #e0f2f1;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .table tbody tr {
-  border-bottom: 1px solid #cdecec;
-  transition: background-color 0.25s ease;
+  transition: all 0.25s ease;
 }
 
 .table tbody tr:hover {
-  background-color: #def2f1;
+  background-color: #e8f5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(7, 87, 91, 0.1);
+}
+
+/* Стили для строки текущего пользователя */
+.you {
+  background-color: #e3f2fd !important;
+  font-weight: 600;
+  color: #07575b;
+  position: relative;
+}
+
+.you::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #2196f3;
+}
+
+/* Анимация загрузки */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #07575b;
+  animation: pulse 1.5s infinite;
+}
+
+.error {
+  color: #c62828;
+  background-color: #ffebee;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin: 1rem 0;
+  border-left: 4px solid #c62828;
 }
 
 .table tbody tr:last-child {
