@@ -7,6 +7,9 @@ import Dashboard from "./pages/Dashboard/Dashboard"
 import CreateQuiz from "./pages/CreateQuiz/CreateQuiz";
 import PlayQuiz from "./pages/PlayQuiz/PlayQuiz";
 import Profile from "./pages/Profile/Profile";
+import AdminPanel from "./pages/AdminPanel/AdminPanel";
+import UsersAdmin from "./pages/UsersAdmin/UsersAdmin";
+import QuizzesAdmin from "./pages/QuizzesAdmin/QuizzesAdmin";
 
 function App() {
   return (
@@ -23,6 +26,18 @@ function App() {
         <Route
           path="/register"
           element={<Register />}
+        />
+        <Route
+          path="/admin"
+          element={<AdminPanel />}
+        />
+        <Route
+          path="/users-admin"
+          element={<UsersAdmin />}
+        />
+        <Route
+          path="/quizzes-admin"
+          element={<QuizzesAdmin />}
         />
         <Route
           path="/dashboard"

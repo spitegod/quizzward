@@ -1,0 +1,115 @@
+/* Фон и контейнер */
+.page {
+  background-color: #66a5ad;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Контент */
+.content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 28px 48px;
+}
+
+/* Заголовок */
+.h2 {
+  margin: 0 0 18px;
+  font-size: 2rem;
+  line-height: 1.2;
+  color: #07575b;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  text-shadow: 0 1px 0 rgba(255,255,255,.3);
+}
+
+/* Карточка-обёртка */
+.card {
+  background: #fff;
+  border: 1px solid #cdecec;
+  border-radius: 20px;
+  box-shadow: 0 3px 10px rgba(7, 87, 91, 0.15);
+  padding: 20px 24px;
+}
+
+/* Скролл для узких экранов */
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+/* Таблица */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+/* Шапка */
+.table thead td {
+  background: #def2f1;
+  color: #054a49;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 12px 14px;
+  border-bottom: 2px solid #cdecec;
+  text-align: left;
+}
+
+/* Строки */
+.table tbody tr:nth-child(odd) { background: #ffffff; }
+.table tbody tr:nth-child(even) { background: #f7fbfb; }
+.table tbody tr:hover { background: #def2f1; transition: background-color .2s ease; }
+
+/* Ячейки */
+.table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #cdecec;
+  color: #054a49;
+  font-weight: 600;
+}
+
+/* Колонка № */
+.colIndex {
+  width: 64px;
+  text-align: center;
+  color: #07575b;
+}
+
+/* Действия */
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Кнопка удаления (аккуратный danger в фирменной гамме) */
+.btnDanger {
+  border: 1px solid #cdecec;
+  background: #ffffff;
+  color: #b83b3b;                 /* мягкий красный для статуса */
+  font-weight: 800;
+  padding: 9px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(7, 87, 91, 0.12);
+  transition: transform .12s ease, background-color .2s ease, box-shadow .12s ease, border-color .2s ease;
+}
+.btnDanger:hover {
+  background: #ffe9e9;            /* лёгкий розовый hover */
+  transform: translateY(-1px);
+}
+.btnDanger:active { transform: translateY(0); }
+.btnDanger:focus-visible { outline: 2px solid #07575b; outline-offset: 3px; }
+
+/* Адаптив */
+@media (max-width: 700px) {
+  .content { padding: 24px 18px 36px; }
+  .h2 { font-size: 1.6rem; }
+  .card { padding: 16px 18px; }
+}

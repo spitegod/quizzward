@@ -1,0 +1,118 @@
+/* Фон и контейнер */
+.page {
+  background-color: #66a5ad;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Основной контент */
+.content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 28px 48px;
+}
+
+/* Заголовки */
+.h2 {
+  margin: 0;
+  font-size: 2.2rem;
+  line-height: 1.2;
+  color: #07575b;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.sub {
+  margin: 6px 0 28px;
+  color: #054a49;
+  font-weight: 500;
+}
+
+/* Карточка с таблицей */
+.card {
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid #cdecec;
+  box-shadow: 0 3px 10px rgba(7, 87, 91, 0.15);
+  padding: 20px 24px;
+}
+
+/* Заголовок таблицы */
+.h3 {
+  margin: 0 0 14px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #07575b;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+/* Обёртка таблицы */
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+
+/* Таблица */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 540px;
+}
+
+/* Шапка */
+.table thead th {
+  background: #def2f1;
+  color: #054a49;
+  font-weight: 700;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 2px solid #cdecec;
+}
+
+/* Строки */
+.table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+.table tbody tr:nth-child(even) {
+  background-color: #f7fbfb;
+}
+
+.table tbody tr:hover {
+  background-color: #def2f1;
+  transition: background-color .2s ease;
+}
+
+/* Ячейки */
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #cdecec;
+  color: #054a49;
+  font-weight: 600;
+}
+
+/* Колонка № */
+.colIndex {
+  width: 60px;
+  text-align: center;
+  color: #07575b;
+}
+
+/* Числа моноширинно */
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Адаптив */
+@media (max-width: 700px) {
+  .content { padding: 24px 18px 36px; }
+  .h2 { font-size: 1.8rem; }
+  .h3 { font-size: 1.1rem; }
+  .card { padding: 16px 18px; }
+}
