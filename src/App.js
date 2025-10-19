@@ -8,6 +8,7 @@ import CreateQuiz from "./pages/CreateQuiz/CreateQuiz";
 import PlayQuiz from "./pages/PlayQuiz/PlayQuiz";
 import Profile from "./pages/Profile/Profile";
 import AdminPanel from "./pages/AdminPanel/AdminPanel";
+import UsersAdmin from "./pages/UsersAdmin/UsersAdmin";
 
 function App() {
   return (
@@ -28,6 +29,10 @@ function App() {
         <Route
           path="/admin"
           element={<AdminPanel />}
+        />
+        <Route
+          path="/users-admin"
+          element={<UsersAdmin />}
         />
         <Route
           path="/dashboard"
