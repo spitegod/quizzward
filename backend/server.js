@@ -40,67 +40,102 @@ app.use(bodyParser.json());
 
 // Инициализация таблиц
 function initDB() {
-  // Таблица пользователей
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    login TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
-
-  // Таблица викторин
-  db.run(`CREATE TABLE IF NOT EXISTS quizzes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    description TEXT,
-    user_id INTEGER NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_public BOOLEAN DEFAULT 1,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  )`);
-
-  // Таблица вопросов
-  db.run(`CREATE TABLE IF NOT EXISTS questions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quiz_id INTEGER NOT NULL,
-    question_text TEXT NOT NULL,
-    options TEXT NOT NULL, -- JSON массив вариантов ответов
-    correct_answer INTEGER NOT NULL, -- индекс правильного ответа
-    points INTEGER DEFAULT 1,
-    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
-  )`);
-
-  // Добавляем поле points в таблицу users, если оно не существует
-  db.all("PRAGMA table_info(users)", [], (err, columns) => {
-    if (err) return console.error('Ошибка при проверке структуры таблицы users:', err);
+  // Создаем таблицы по порядку с обработкой ошибок
+  const queries = [
+    // Таблица пользователей (должна быть создана первой из-за внешних ключей)
+    `CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      login TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      points INTEGER DEFAULT 0,
+      is_banned BOOLEAN DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
     
-    const hasPointsColumn = columns && Array.isArray(columns) && 
-      columns.some(col => col.name === 'points');
-      
-    if (!hasPointsColumn) {
-      db.run('ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 0', (err) => {
-        if (err) return console.error('Ошибка при добавлении поля points:', err);
-        console.log('Добавлено поле points в таблицу users');
-      });
-    } else {
-      console.log('Поле points уже существует в таблице users');
+    // Таблица категорий
+    `CREATE TABLE IF NOT EXISTS categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL
+    )`,
+    
+    // Таблица викторин
+    `CREATE TABLE IF NOT EXISTS quizzes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      user_id INTEGER NOT NULL,
+      is_public BOOLEAN DEFAULT 1,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`,
+    
+    // Связующая таблица для категорий викторин
+    `CREATE TABLE IF NOT EXISTS quiz_categories (
+      quiz_id INTEGER NOT NULL,
+      category_id INTEGER NOT NULL,
+      PRIMARY KEY (quiz_id, category_id),
+      FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+      FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    )`,
+    
+    // Таблица вопросов
+    `CREATE TABLE IF NOT EXISTS questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      quiz_id INTEGER NOT NULL,
+      question_text TEXT NOT NULL,
+      options TEXT NOT NULL, -- JSON массив вариантов ответов
+      correct_answer INTEGER NOT NULL, -- индекс правильного ответа
+      points INTEGER DEFAULT 1,
+      FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
+    )`
+  ];
+  
+  // Выполняем запросы последовательно
+  const executeQueries = (index) => {
+    if (index >= queries.length) {
+      // После создания всех таблиц добавляем стандартные категории
+      addDefaultCategories();
+      return;
     }
-
-    // Добавляем поле is_banned, если оно не существует
-    const hasIsBannedColumn = columns.some(col => col.name === 'is_banned');
-    if (!hasIsBannedColumn) {
-      db.run('ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT 0', (err) => {
-        if (err) return console.error('Ошибка при добавлении поля is_banned:', err);
-        console.log('Добавлено поле is_banned в таблицу users');
+    
+    db.run(queries[index], (err) => {
+      if (err) {
+        console.error(`Ошибка при создании таблицы ${index + 1}:`, err);
+      }
+      executeQueries(index + 1);
+    });
+  };
+  
+  // Функция для добавления стандартных категорий
+  const addDefaultCategories = () => {
+    const defaultCategories = [
+      'Наука', 'История', 'Искусство', 'Спорт', 'Кино',
+      'Музыка', 'Литература', 'Технологии', 'География', 'Разное'
+    ];
+    
+    const stmt = db.prepare('INSERT OR IGNORE INTO categories (name) VALUES (?)');
+    
+    defaultCategories.forEach((category, index) => {
+      stmt.run(category, (err) => {
+        if (err) {
+          console.error('Ошибка при добавлении категории:', category, err);
+        }
       });
-    } else {
-      console.log('Поле is_banned уже существует в таблице users');
-    }
-  });
+    });
+    
+    stmt.finalize();
+    console.log('База данных инициализирована');
+  };
+  
+  // Начинаем выполнение запросов
+  executeQueries(0);
 }
 
+// Инициализация базы данных при старте сервера
 initDB();
+
+// Email validation function
 
 // Email validation function
 function isValidEmail(email) {
@@ -623,99 +658,247 @@ app.get('/quizzes/my', authenticateToken, (req, res) => {
 app.get('/api/quizzes', authenticateToken, (req, res) => {
   const userId = req.user.id;
   
+  // Функция для получения категорий викторины
+  const getQuizCategories = (quizId) => {
+    return new Promise((resolve, reject) => {
+      db.all(
+        `SELECT c.name 
+         FROM categories c
+         JOIN quiz_categories qc ON c.id = qc.category_id
+         WHERE qc.quiz_id = ?`,
+        [quizId],
+        (err, categories) => {
+          if (err) {
+            console.error('Ошибка при получении категорий викторины:', err);
+            resolve([]); // Возвращаем пустой массив в случае ошибки
+          } else {
+            resolve(categories.map(c => c.name));
+          }
+        }
+      );
+    });
+  };
+  
+  // Функция для обработки списка викторин с добавлением категорий
+  const processQuizzes = (quizzes) => {
+    if (!quizzes || quizzes.length === 0) return Promise.resolve([]);
+    
+    return Promise.all(
+      quizzes.map(quiz => 
+        getQuizCategories(quiz.id).then(categories => ({
+          ...quiz,
+          categories
+        }))
+      )
+    );
+  };
+  
   // Получаем свои викторины
   db.all(
-    `SELECT q.id, q.title, q.description, q.created_at, 
-      COUNT(qu.id) as questions_count,
-      u.login as author,
-      1 as is_owner
+    `SELECT q.*, 
+      (SELECT COUNT(*) FROM questions WHERE quiz_id = q.id) as questions_count,
+      u.login as author
      FROM quizzes q
-     LEFT JOIN questions qu ON q.id = qu.quiz_id
-     LEFT JOIN users u ON q.user_id = u.id
+     JOIN users u ON q.user_id = u.id
      WHERE q.user_id = ?
-     GROUP BY q.id
      ORDER BY q.created_at DESC`,
     [userId],
-    (err, myQuizzes) => {
+    async (err, myQuizzes) => {
       if (err) {
-        console.error('Ошибка при получении викторин:', err);
-        return res.status(500).json({ error: 'Ошибка сервера' });
+        console.error('Ошибка при получении викторин пользователя:', err);
+        return res.status(500).json({ error: 'Ошибка при получении викторин' });
       }
       
       // Получаем публичные викторины других пользователей
       db.all(
-        `SELECT q.id, q.title, q.description, q.created_at, 
-          COUNT(qu.id) as questions_count,
-          u.login as author,
-          0 as is_owner
+        `SELECT q.*, 
+          (SELECT COUNT(*) FROM questions WHERE quiz_id = q.id) as questions_count,
+          u.login as author
          FROM quizzes q
-         LEFT JOIN questions qu ON q.id = qu.quiz_id
-         LEFT JOIN users u ON q.user_id = u.id
+         JOIN users u ON q.user_id = u.id
          WHERE q.user_id != ? AND q.is_public = 1
-         GROUP BY q.id
          ORDER BY q.created_at DESC`,
         [userId],
-        (err, publicQuizzes) => {
+        async (err, publicQuizzes) => {
           if (err) {
             console.error('Ошибка при получении публичных викторин:', err);
-            return res.status(500).json({ error: 'Ошибка сервера' });
+            return res.status(500).json({ error: 'Ошибка при получении викторин' });
           }
           
-          // Возвращаем обе группы викторин
-          res.json({
-            myQuizzes: myQuizzes || [],
-            publicQuizzes: publicQuizzes || []
-          });
+          try {
+            // Добавляем категории к викторинам
+            const [myQuizzesWithCategories, publicQuizzesWithCategories] = await Promise.all([
+              processQuizzes(myQuizzes || []),
+              processQuizzes(publicQuizzes || [])
+            ]);
+            
+            res.json({
+              myQuizzes: myQuizzesWithCategories,
+              publicQuizzes: publicQuizzesWithCategories
+            });
+          } catch (error) {
+            console.error('Ошибка при обработке категорий:', error);
+            // Возвращаем викторины без категорий в случае ошибки
+            res.json({
+              myQuizzes: myQuizzes || [],
+              publicQuizzes: publicQuizzes || []
+            });
+          }
         }
       );
     }
   );
 });
 
+// Получение всех категорий
+app.get('/api/categories', authenticateToken, (req, res) => {
+  db.all('SELECT id, name FROM categories ORDER BY name', [], (err, categories) => {
+    if (err) {
+      console.error('Ошибка при получении категорий:', err);
+      return res.status(500).json({ error: 'Ошибка сервера при получении категорий' });
+    }
+    res.json(categories);
+  });
+});
+
 // Создание новой викторины
-app.post('/api/quizzes', authenticateToken, (req, res) => {
-  const { title, description, questions } = req.body;
+app.post('/api/quizzes', authenticateToken, async (req, res) => {
+  const { title, description, questions, is_public = true, categories = [] } = req.body;
   const userId = req.user.id;
 
   if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
-    return res.status(400).json({ error: 'Название викторины и вопросы обязательны' });
+    return res.status(400).json({ error: 'Название и вопросы обязательны' });
+  }
+  
+  if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    return res.status(400).json({ error: 'Выберите хотя бы одну категорию' });
   }
 
-  db.serialize(() => {
-    db.run(
-      'INSERT INTO quizzes (title, description, user_id) VALUES (?, ?, ?)',
-      [title, description || '', userId],
-      function(err) {
-        if (err) {
-          console.error('Ошибка при создании викторины:', err);
-          return res.status(500).json({ error: 'Ошибка при создании викторины' });
-        }
-
-        const quizId = this.lastID;
-        const stmt = db.prepare(
-          'INSERT INTO questions (quiz_id, question_text, options, correct_answer, points) VALUES (?, ?, ?, ?, ?)'
-        );
-
-        questions.forEach(q => {
-          stmt.run(
-            quizId,
-            q.question,
-            JSON.stringify([q.answer]), // Сохраняем ответ как массив с одним элементом
-            0, // Индекс правильного ответа (у нас всегда 0, так как один ответ)
-            1  // Баллы за вопрос
-          );
-        });
-
-        stmt.finalize(err => {
+  try {
+    // Начинаем транзакцию
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+      
+      // Вставляем викторину
+      db.run(
+        'INSERT INTO quizzes (title, description, user_id, is_public) VALUES (?, ?, ?, ?)',
+        [title, description, userId, is_public ? 1 : 0],
+        function(err) {
           if (err) {
-            console.error('Ошибка при сохранении вопросов:', err);
-            return res.status(500).json({ error: 'Ошибка при сохранении вопросов' });
+            db.run('ROLLBACK');
+            console.error('Ошибка при создании викторины:', err);
+            return res.status(500).json({ error: 'Ошибка при создании викторины' });
           }
-          res.status(201).json({ id: quizId, message: 'Викторина успешно создана' });
-        });
-      }
-    );
-  });
+
+          const quizId = this.lastID;
+          
+          // Сохраняем вопросы
+          const stmt = db.prepare('INSERT INTO questions (quiz_id, question_text, options, correct_answer, points) VALUES (?, ?, ?, ?, ?)');
+          
+          // Process each question
+          let hasError = false;
+          
+          for (const q of questions) {
+            try {
+              // Ensure we have a valid question object
+              if (!q || !q.question || !Array.isArray(q.options) || q.options.length === 0) {
+                throw new Error('Некорректный формат вопросов');
+              }
+              
+              // If correctAnswer is not provided, default to 0 (first option)
+              const correctAnswer = q.correctAnswer !== undefined ? q.correctAnswer : 0;
+              
+              // Ensure correctAnswer is within bounds
+              if (correctAnswer < 0 || correctAnswer >= q.options.length) {
+                throw new Error(`Некорректный правильный ответ для вопроса "${q.question}"`);
+              }
+              
+              stmt.run(
+                quizId,
+                q.question,
+                JSON.stringify(q.options),
+                correctAnswer,
+                q.points || 1
+              );
+            } catch (error) {
+              db.run('ROLLBACK');
+              console.error('Ошибка при сохранении вопроса:', error);
+              return res.status(400).json({ 
+                error: error.message || 'Ошибка при сохранении вопросов' 
+              });
+            }
+          }
+          
+          stmt.finalize(err => {
+            if (err) {
+              db.run('ROLLBACK');
+              console.error('Ошибка при сохранении вопросов:', err);
+              return res.status(500).json({ error: 'Ошибка при сохранении вопросов' });
+            }
+            
+            // Сохраняем категории
+            const catStmt = db.prepare('INSERT INTO quiz_categories (quiz_id, category_id) VALUES (?, ?)');
+            
+            categories.forEach(catId => {
+              catStmt.run(quizId, catId);
+            });
+            
+            catStmt.finalize(err => {
+              if (err) {
+                db.run('ROLLBACK');
+                console.error('Ошибка при сохранении категорий:', err);
+                return res.status(500).json({ error: 'Ошибка при сохранении категорий' });
+              }
+              
+              // Фиксируем транзакцию
+              db.run('COMMIT', (err) => {
+                if (err) {
+                  console.error('Ошибка при фиксации транзакции:', err);
+                  return res.status(500).json({ error: 'Ошибка при сохранении викторины' });
+                }
+                
+                // Получаем имена категорий для ответа
+                const placeholders = categories.map(() => '?').join(',');
+                db.all(
+                  `SELECT name FROM categories WHERE id IN (${placeholders})`,
+                  categories,
+                  (err, categoryNames) => {
+                    if (err) {
+                      console.error('Ошибка при получении категорий:', err);
+                      // Не прерываем выполнение, просто вернем пустой массив
+                      return res.status(201).json({ 
+                        id: quizId, 
+                        title, 
+                        description, 
+                        user_id: userId, 
+                        is_public,
+                        questions_count: questions.length,
+                        categories: []
+                      });
+                    }
+                    
+                    res.status(201).json({ 
+                      id: quizId, 
+                      title, 
+                      description, 
+                      user_id: userId, 
+                      is_public,
+                      questions_count: questions.length,
+                      categories: categoryNames.map(c => c.name)
+                    });
+                  }
+                );
+              });
+            });
+          });
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Неожиданная ошибка при создании викторины:', error);
+    db.run('ROLLBACK');
+    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+  }
 });
 
 // Получение викторины по ID
@@ -994,9 +1177,24 @@ app.post('/quizzes/:id/questions', authenticateToken, (req, res) => {
   const quizId = req.params.id;
   const { questionText, options, correctAnswer, points = 1 } = req.body;
 
-  // Валидация
-  if (!questionText || !options || !Array.isArray(options) || options.length < 2) {
-    return res.status(400).json({ message: 'Некорректные данные вопроса' });
+  // Проверяем, что все вопросы имеют правильный формат
+  if (!req.body.every(q => {
+    try {
+      const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+      return q.questionText && 
+             Array.isArray(options) && 
+             options.length > 0 &&
+             q.correctAnswer !== undefined && 
+             q.correctAnswer >= 0 && 
+             q.correctAnswer < options.length;
+    } catch (e) {
+      console.error('Ошибка при парсинге опций вопроса:', e);
+      return false;
+    }
+  })) {
+    return res.status(400).json({ 
+      error: 'Некорректный формат вопросов. Убедитесь, что у каждого вопроса есть текст, варианты ответов и указан правильный ответ.' 
+    });
   }
 
   if (correctAnswer === undefined || correctAnswer < 0 || correctAnswer >= options.length) {

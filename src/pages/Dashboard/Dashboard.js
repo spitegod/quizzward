@@ -4,6 +4,7 @@ import Nav from "../../components/Nav/Nav";
 import { useEffect, useState } from "react";
 import Leaderboard from "../../components/Leaderboard/Leaderboard";
 import { getQuizzes, deleteQuiz } from "../../services/quizService";
+import { QUIZ_CATEGORIES } from "../../constants/categories";
 import { getCurrentUser } from "../../services/userService";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -26,6 +27,16 @@ function Dashboard() {
 
         // Загружаем викторины
         const data = await getQuizzes(token);
+        console.log('Fetched quizzes data:', data); // Debug log
+        
+        // Проверяем и логируем структуру данных
+        if (data.myQuizzes) {
+          console.log('My quizzes first item:', data.myQuizzes[0]);
+        }
+        if (data.publicQuizzes) {
+          console.log('Public quizzes first item:', data.publicQuizzes[0]);
+        }
+        
         setMyQuizzes(data.myQuizzes || []);
         setPublicQuizzes(data.publicQuizzes || []);
         setError(null);
@@ -93,38 +104,65 @@ function Dashboard() {
             </div>
           ) : (
             <div className={s.quizGrid}>
-              {myQuizzes.map((quiz) => (
-                <div key={quiz.id} className={s.quizItem}>
-                  <div className={s.quizInfo}>
-                    <h3 className={s.quizTitle}>{quiz.title}</h3>
-                    {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
-                    <p className={s.quizMeta}>
-                      Вопросов: {quiz.questions_count || 0} • 
-                      Автор: {quiz.author}
-                    </p>
+              {myQuizzes.map((quiz) => {
+                console.log('Quiz data:', quiz);
+                return (
+                  <div key={quiz.id} className={s.quizItem}>
+                    <div className={s.quizInfo}>
+                      <h3 className={s.quizTitle}>{quiz.title}</h3>
+                      {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
+                      <div className={s.quizMetaContainer}>
+                        <p className={s.quizMeta}>
+                          Вопросов: {quiz.questions_count || 0} • 
+                          Автор: {quiz.author}
+                        </p>
+                        <div className={s.quizCategories}>
+                          {quiz.categories && quiz.categories.length > 0 ? (
+                            <>
+                              {quiz.categories.slice(0, 3).map((category, idx) => {
+                                // Handle both string and object formats for backward compatibility
+                                const categoryName = typeof category === 'string' 
+                                  ? category 
+                                  : (category.name || 'Категория');
+                                return (
+                                  <span key={idx} className={s.categoryTag}>
+                                    {categoryName}
+                                  </span>
+                                );
+                              })}
+                              {quiz.categories.length > 3 && (
+                                <span className={s.moreCategories}>+{quiz.categories.length - 3}</span>
+                              )}
+                            </>
+                          ) : (
+                            <span className={s.noCategories}>Категории не указаны</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={s.quizActions}>
+                      <button
+                        onClick={() => navigate(`/play-quiz/${quiz.id}`)}
+                        className={s.buttonPlay}
+                      >
+                        Играть
+                      </button>
+                      <button
+                        onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
+                        className={s.buttonEdit}
+                      >
+                        Редактировать
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteQuiz(quiz.id, e)}
+                        className={s.buttonDelete}
+                      >
+                        Удалить
+                      </button>
+                    </div>
                   </div>
-                  <div className={s.quizActions}>
-                    <button
-                      onClick={() => navigate(`/play-quiz/${quiz.id}`)}
-                      className={s.buttonPlay}
-                    >
-                      Играть
-                    </button>
-                    <button
-                      onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
-                      className={s.buttonEdit}
-                    >
-                      Редактировать
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteQuiz(quiz.id, e)}
-                      className={s.buttonDelete}
-                    >
-                      Удалить
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -1,23 +1,71 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Nav from "../../components/Nav/Nav";
 import s from "./CreateQuiz.module.css";
 import { createQuiz, getQuizById, updateQuiz } from "../../services/quizService";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+// Remove the import of QUIZ_CATEGORIES since we'll fetch them from the backend
 
 function CreateQuiz({ isEdit = false }) {
     const navigate = useNavigate();
     const { id } = useParams();
     const [quizName, setQuizName] = useState("");
     const [description, setDescription] = useState("");
+    const [categories, setCategories] = useState([]);
+    const [availableCategories, setAvailableCategories] = useState([]);
+    const [isCategoryOpen, setIsCategoryOpen] = useState(false);
     const [questions, setQuestions] = useState([{ question: "", answer: "" }]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+    const categoryRef = useRef(null);
 
+    // Handle click outside to close category dropdown
     useEffect(() => {
-        if (isEdit && id) {
-            loadQuiz();
-        }
+        const handleClickOutside = (event) => {
+            if (categoryRef.current && !categoryRef.current.contains(event.target)) {
+                setIsCategoryOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Fetch available categories from the backend
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:4000/api/categories', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch categories');
+                }
+                
+                const data = await response.json();
+                setAvailableCategories(data);
+                
+                // If editing, load the quiz after categories are loaded
+                if (isEdit && id) {
+                    await loadQuiz();
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                toast.error('Не удалось загрузить категории');
+            } finally {
+                setIsLoadingCategories(false);
+            }
+        };
+        
+        fetchCategories();
     }, [id, isEdit]);
 
     const loadQuiz = async () => {
@@ -27,6 +75,21 @@ function CreateQuiz({ isEdit = false }) {
             const quiz = await getQuizById(id, token);
             setQuizName(quiz.title);
             setDescription(quiz.description || '');
+            
+            // Convert category names to IDs if needed
+            if (quiz.categories && quiz.categories.length > 0) {
+                const categoryIds = quiz.categories.map(cat => {
+                    if (typeof cat === 'object') return cat.id;
+                    // If it's just a name, find the ID
+                    const found = availableCategories.find(c => c.name === cat);
+                    return found ? found.id : null;
+                }).filter(Boolean);
+                
+                setCategories(categoryIds);
+            } else {
+                setCategories([]);
+            }
+            
             setQuestions(quiz.questions || []);
         } catch (error) {
             console.error('Ошибка при загрузке викторины:', error);
@@ -67,9 +130,15 @@ function CreateQuiz({ isEdit = false }) {
         try {
             setIsLoading(true);
             const token = localStorage.getItem('token');
+            if (categories.length === 0) {
+                toast.error('Выберите хотя бы одну категорию');
+                return;
+            }
+
             const quizData = {
                 title: quizName,
                 description: description.trim(),
+                categories: categories,
                 questions: questions.map(q => ({
                     question: q.question.trim(),
                     answer: q.answer.trim()
@@ -124,6 +193,71 @@ function CreateQuiz({ isEdit = false }) {
                         disabled={isLoading}
                         rows="3"
                     />
+                </div>
+
+                <div className={s.formGroup}>
+                    <label className={s.label}>Категории *</label>
+                    <div className={s.categorySelect} ref={categoryRef}>
+                        <div 
+                            className={`${s.selectedCategories} ${isCategoryOpen ? s.active : ''}`}
+                            onClick={() => !isLoading && setIsCategoryOpen(!isCategoryOpen)}
+                        >
+                            {categories.length > 0 ? (
+                                <div className={s.categoryTags}>
+                                    {categories.map((categoryId, index) => {
+                                        const category = availableCategories.find(c => c.id === categoryId);
+                                        return category ? (
+                                            <span key={categoryId} className={s.categoryTag}>
+                                                {category.name}
+                                                <button 
+                                                    type="button"
+                                                    className={s.removeCategory}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCategories(categories.filter(id => id !== categoryId));
+                                                    }}
+                                                >
+                                                    ×
+                                                </button>
+                                            </span>
+                                        ) : null;
+                                    })}
+                                </div>
+                            ) : (
+                                <span className={s.placeholder}>Выберите категории</span>
+                            )}
+                            <span className={s.arrow}>▼</span>
+                        </div>
+                        
+                        {isCategoryOpen && (
+                            <div className={s.categoryDropdown}>
+                                {isLoadingCategories ? (
+                                    <div className={s.loadingText}>Загрузка категорий...</div>
+                                ) : availableCategories.length > 0 ? (
+                                    availableCategories.map((category) => (
+                                        <label key={category.id} className={s.categoryOption}>
+                                            <input
+                                                type="checkbox"
+                                                checked={categories.includes(category.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setCategories([...categories, category.id]);
+                                                    } else {
+                                                        setCategories(categories.filter(id => id !== category.id));
+                                                    }
+                                                }}
+                                            />
+                                            <span className={s.checkmark}></span>
+                                            {category.name}
+                                        </label>
+                                    ))
+                                ) : (
+                                    <div className={s.noCategories}>Нет доступных категорий</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                    <div className={s.categoryHint}>Выберите одну или несколько категорий</div>
                 </div>
 
                 <div className={s.questionsList}>
