@@ -1,17 +1,307 @@
 .quizContainer {
-    background-color: #66a5ad;
-    height: 100vh;
-    width: 100%;
-
+    background-color: #f5fbfc;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .quizContent {
-    padding: 0 30px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+    width: 100%;
     box-sizing: border-box;
 }
 
+.quizContent h2 {
+    color: #07575b;
+    margin: 0 0 2rem;
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-align: center;
+    position: relative;
+    padding-bottom: 0.8rem;
+}
+
+.quizContent h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #4db6ac, #80cbc4);
+    border-radius: 2px;
+}
+
+.formGroup {
+    margin-bottom: 1.8rem;
+}
+
+.label {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+    color: #054a49;
+    font-size: 0.95rem;
+}
+
+.inputQuizName,
+.textareaDescription {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    border: 2px solid #cdecec;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(7, 87, 91, 0.06);
+}
+
+.textareaDescription {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.inputQuizName:focus,
+.textareaDescription:focus {
+    outline: none;
+    border-color: #4db6ac;
+    box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.2);
+}
+
+.questionsList {
+    margin-top: 2.5rem;
+}
+
+.questionsList h3 {
+    color: #07575b;
+    margin: 0 0 1.5rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.questionsList h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(90deg, #4db6ac, #80cbc4);
+    border-radius: 2px;
+}
+
 .questionBlock {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(7, 87, 91, 0.08);
+    border: 1px solid #e0f2f1;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    animation: fadeIn 0.4s ease-out forwards;
+    opacity: 0;
+}
+
+.questionBlock:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(7, 87, 91, 0.12);
+}
+
+.questionHeader {
     display: flex;
-    gap: 20px; /* расстояние между всеми элементами внутри блока */
-    margin-bottom: 20px; /* расстояние между блоками вопросов */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.questionNumber {
+    font-weight: 600;
+    color: #07575b;
+    font-size: 0.95rem;
+}
+
+.removeQuestion {
+    background: none;
+    border: none;
+    color: #e57373;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.removeQuestion:hover {
+    background-color: #ffebee;
+    transform: scale(1.1);
+}
+
+.removeQuestion:active {
+    transform: scale(0.95);
+}
+
+.inputQuestion,
+.inputAnswer {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 1rem;
+    border: 2px solid #e0f2f1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background-color: #f8fdfd;
+}
+
+.inputQuestion:focus,
+.inputAnswer:focus {
+    outline: none;
+    border-color: #4db6ac;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(77, 182, 172, 0.2);
+}
+
+.inputQuestion::placeholder,
+.inputAnswer::placeholder {
+    color: #90a4ae;
+}
+
+.buttonAddQuestion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 2px dashed #a5d6a7;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 2rem 0 1.5rem;
+}
+
+.buttonAddQuestion:hover {
+    background-color: #c8e6c9;
+    border-color: #81c784;
+    transform: translateY(-1px);
+}
+
+.buttonAddQuestion:active {
+    transform: translateY(0);
+}
+
+.actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0f2f1;
+}
+
+.buttonPrimary,
+.buttonSecondary {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.buttonPrimary {
+    background: linear-gradient(135deg, #00796b, #009688);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 121, 107, 0.25);
+}
+
+.buttonPrimary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 121, 107, 0.35);
+}
+
+.buttonPrimary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.buttonPrimary:disabled {
+    background: #b2dfdb;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.buttonSecondary {
+    background-color: #f5f5f5;
+    color: #616161;
+    border: 1px solid #e0e0e0;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+    background-color: #eeeeee;
+    transform: translateY(-1px);
+}
+
+.buttonSecondary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.buttonLoader {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.questionBlock:nth-child(1) { animation-delay: 0.1s; }
+.questionBlock:nth-child(2) { animation-delay: 0.2s; }
+.questionBlock:nth-child(3) { animation-delay: 0.3s; }
+.questionBlock:nth-child(n+4) { animation-delay: 0.4s; }
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .quizContent {
+        padding: 1.5rem 1rem 2.5rem;
+    }
+    
+    .actions {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    
+    .buttonPrimary,
+    .buttonSecondary {
+        width: 100%;
+    }
 }

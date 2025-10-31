@@ -10,6 +10,7 @@ import Profile from "./pages/Profile/Profile";
 import AdminPanel from "./pages/AdminPanel/AdminPanel";
 import UsersAdmin from "./pages/UsersAdmin/UsersAdmin";
 import QuizzesAdmin from "./pages/QuizzesAdmin/QuizzesAdmin";
+import EditQuiz from "./pages/EditQuiz/EditQuiz";
 
 function App() {
   return (
@@ -54,6 +55,9 @@ function App() {
         <Route
           path="/play-quiz/:id"
           element={<PlayQuiz />} />
+        <Route
+          path="/edit-quiz/:id"
+          element={<EditQuiz />} />
       </Routes>
     </BrowserRouter>
   );

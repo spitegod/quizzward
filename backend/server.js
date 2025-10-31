@@ -285,39 +285,114 @@ app.get('/quizzes/my', authenticateToken, (req, res) => {
 });
 
 // Получение викторины по ID с вопросами
-app.get('/quizzes/:id', authenticateToken, (req, res) => {
+// Получение всех викторин пользователя
+app.get('/api/quizzes', authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  
+  db.all(
+    `SELECT q.id, q.title, q.description, q.created_at, 
+      COUNT(qu.id) as questions_count,
+      u.login as author
+     FROM quizzes q
+     LEFT JOIN questions qu ON q.id = qu.quiz_id
+     LEFT JOIN users u ON q.user_id = u.id
+     WHERE q.user_id = ?
+     GROUP BY q.id`,
+    [userId],
+    (err, quizzes) => {
+      if (err) {
+        console.error('Ошибка при получении викторин:', err);
+        return res.status(500).json({ error: 'Ошибка сервера' });
+      }
+      res.json(quizzes);
+    }
+  );
+});
+
+// Создание новой викторины
+app.post('/api/quizzes', authenticateToken, (req, res) => {
+  const { title, description, questions } = req.body;
+  const userId = req.user.id;
+
+  if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Название викторины и вопросы обязательны' });
+  }
+
+  db.serialize(() => {
+    db.run(
+      'INSERT INTO quizzes (title, description, user_id) VALUES (?, ?, ?)',
+      [title, description || '', userId],
+      function(err) {
+        if (err) {
+          console.error('Ошибка при создании викторины:', err);
+          return res.status(500).json({ error: 'Ошибка при создании викторины' });
+        }
+
+        const quizId = this.lastID;
+        const stmt = db.prepare(
+          'INSERT INTO questions (quiz_id, question_text, options, correct_answer, points) VALUES (?, ?, ?, ?, ?)'
+        );
+
+        questions.forEach(q => {
+          stmt.run(
+            quizId,
+            q.question,
+            JSON.stringify([q.answer]), // Сохраняем ответ как массив с одним элементом
+            0, // Индекс правильного ответа (у нас всегда 0, так как один ответ)
+            1  // Баллы за вопрос
+          );
+        });
+
+        stmt.finalize(err => {
+          if (err) {
+            console.error('Ошибка при сохранении вопросов:', err);
+            return res.status(500).json({ error: 'Ошибка при сохранении вопросов' });
+          }
+          res.status(201).json({ id: quizId, message: 'Викторина успешно создана' });
+        });
+      }
+    );
+  });
+});
+
+// Получение викторины по ID
+app.get('/api/quizzes/:id', authenticateToken, (req, res) => {
   const quizId = req.params.id;
+  const userId = req.user.id;
   
   // Сначала получаем данные викторины
   db.get(
-    'SELECT qz.*, u.login as author FROM quizzes qz LEFT JOIN users u ON qz.user_id = u.id WHERE qz.id = ?',
-    [quizId],
+    `SELECT q.*, u.login as author 
+     FROM quizzes q 
+     JOIN users u ON q.user_id = u.id 
+     WHERE q.id = ? AND (q.user_id = ? OR q.is_public = 1)`,
+    [quizId, userId],
     (err, quiz) => {
       if (err) {
         console.error('Ошибка при получении викторины:', err);
-        return res.status(500).json({ message: 'Ошибка при получении викторины' });
+        return res.status(500).json({ error: 'Ошибка сервера' });
       }
       
       if (!quiz) {
-        return res.status(404).json({ message: 'Викторина не найдена' });
+        return res.status(404).json({ error: 'Викторина не найдена' });
       }
-
+      
       // Затем получаем вопросы для этой викторины
       db.all(
-        'SELECT id, question_text, options, points FROM questions WHERE quiz_id = ?',
+        'SELECT * FROM questions WHERE quiz_id = ?',
         [quizId],
         (err, questions) => {
           if (err) {
             console.error('Ошибка при получении вопросов:', err);
-            return res.status(500).json({ message: 'Ошибка при получении вопросов' });
+            return res.status(500).json({ error: 'Ошибка сервера' });
           }
-
-          // Парсим JSON с вариантами ответов
+          
+          // Форматируем вопросы для фронтенда
           const formattedQuestions = questions.map(q => ({
-            ...q,
-            options: JSON.parse(q.options)
+            question: q.question_text,
+            answer: JSON.parse(q.options)[q.correct_answer] // Получаем правильный ответ
           }));
-
+          
           res.json({
             ...quiz,
             questions: formattedQuestions
@@ -328,7 +403,145 @@ app.get('/quizzes/:id', authenticateToken, (req, res) => {
   );
 });
 
+// Обновление викторины
+app.put('/api/quizzes/:id', authenticateToken, (req, res) => {
+  const quizId = req.params.id;
+  const userId = req.user.id;
+  const { title, description, questions } = req.body;
+
+  if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Название викторины и вопросы обязательны' });
+  }
+
+  // Сначала проверяем, существует ли викторина и принадлежит ли она пользователю
+  db.get(
+    'SELECT id FROM quizzes WHERE id = ? AND user_id = ?',
+    [quizId, userId],
+    (err, quiz) => {
+      if (err) {
+        console.error('Ошибка при проверке викторины:', err);
+        return res.status(500).json({ error: 'Ошибка сервера' });
+      }
+      
+      if (!quiz) {
+        return res.status(404).json({ error: 'Викторина не найдена или у вас нет прав на её изменение' });
+      }
+
+      // Обновляем данные викторины
+      db.serialize(() => {
+        // Обновляем основную информацию о викторине
+        db.run(
+          'UPDATE quizzes SET title = ?, description = ? WHERE id = ?',
+          [title, description || '', quizId],
+          function(err) {
+            if (err) {
+              console.error('Ошибка при обновлении викторины:', err);
+              return res.status(500).json({ error: 'Ошибка при обновлении викторины' });
+            }
+
+            // Удаляем старые вопросы
+            db.run('DELETE FROM questions WHERE quiz_id = ?', [quizId], function(err) {
+              if (err) {
+                console.error('Ошибка при удалении старых вопросов:', err);
+                return res.status(500).json({ error: 'Ошибка при обновлении вопросов' });
+              }
+
+              // Добавляем новые вопросы
+              const stmt = db.prepare(
+                'INSERT INTO questions (quiz_id, question_text, options, correct_answer, points) VALUES (?, ?, ?, ?, ?)'
+              );
+
+              questions.forEach(q => {
+                stmt.run(
+                  quizId,
+                  q.question,
+                  JSON.stringify([q.answer]),
+                  0, // Индекс правильного ответа
+                  1  // Баллы за вопрос
+                );
+              });
+
+              stmt.finalize(err => {
+                if (err) {
+                  console.error('Ошибка при сохранении вопросов:', err);
+                  return res.status(500).json({ error: 'Ошибка при сохранении вопросов' });
+                }
+                res.json({ message: 'Викторина успешно обновлена' });
+              });
+            });
+          }
+        );
+      });
+    }
+  );
+});
+
+// Удаление викторины
+app.delete('/api/quizzes/:id', authenticateToken, (req, res) => {
+  const quizId = req.params.id;
+  const userId = req.user.id;
+
+  // Проверяем, существует ли викторина и принадлежит ли она пользователю
+  db.get(
+    'SELECT id FROM quizzes WHERE id = ? AND user_id = ?',
+    [quizId, userId],
+    (err, quiz) => {
+      if (err) {
+        console.error('Ошибка при проверке викторины:', err);
+        return res.status(500).json({ error: 'Ошибка сервера' });
+      }
+      
+      if (!quiz) {
+        return res.status(404).json({ error: 'Викторина не найдена или у вас нет прав на её удаление' });
+      }
+
+      // Удаляем викторину (внешний ключ CASCADE удалит связанные вопросы)
+      db.run('DELETE FROM quizzes WHERE id = ?', [quizId], function(err) {
+        if (err) {
+          console.error('Ошибка при удалении викторины:', err);
+          return res.status(500).json({ error: 'Ошибка при удалении викторины' });
+        }
+        
+        res.json({ message: 'Викторина успешно удалена' });
+      });
+    }
+  );
+});
+
 // Добавление вопроса к викторине
+// Сохранение результатов прохождения викторины
+app.post('/api/quizzes/:id/results', authenticateToken, (req, res) => {
+  const quizId = req.params.id;
+  const userId = req.user.id;
+  const { score, totalQuestions, answers } = req.body;
+
+  // Валидация
+  if (typeof score !== 'number' || typeof totalQuestions !== 'number' || !Array.isArray(answers)) {
+    return res.status(400).json({ error: 'Некорректные данные результатов' });
+  }
+
+  // Обновляем очки пользователя
+  db.run(
+    'UPDATE users SET points = COALESCE(points, 0) + ? WHERE id = ?',
+    [Math.round(score), userId],
+    function(err) {
+      if (err) {
+        console.error('Ошибка при обновлении очков пользователя:', err);
+        return res.status(500).json({ error: 'Ошибка при сохранении результатов' });
+      }
+      
+      // Здесь можно сохранить детальные результаты прохождения, если нужно
+      res.json({
+        success: true,
+        message: 'Результаты успешно сохранены',
+        score,
+        totalQuestions,
+        percentage: Math.round((score / totalQuestions) * 100)
+      });
+    }
+  );
+});
+
 app.post('/quizzes/:id/questions', authenticateToken, (req, res) => {
   const quizId = req.params.id;
   const { questionText, options, correctAnswer, points = 1 } = req.body;

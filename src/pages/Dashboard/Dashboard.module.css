@@ -84,17 +84,48 @@
 /* Карточка викторины */
 .quizItem {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   background: #fff;
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 18px 20px;
   border: 1px solid #cdecec;
   box-shadow: 0 2px 8px rgba(7, 87, 91, 0.12);
-  transition: background-color .2s ease, transform .08s ease;
-  min-height: 72px;
+  transition: all 0.2s ease;
+  min-height: 120px;
 }
-.quizItem:hover { background-color: #def2f1; }
+
+.quizItem:hover {
+  background-color: #f8fdfd;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(7, 87, 91, 0.15);
+}
+
+.quizInfo {
+  margin-bottom: 16px;
+}
+
+.quizDescription {
+  color: #5c7a7a;
+  font-size: 0.95em;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.quizMeta {
+  font-size: 0.85em;
+  color: #7f9c9c;
+  margin: 8px 0 0;
+  display: flex;
+  gap: 12px;
+}
+
+.quizActions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #e8f4f4;
+}
 
 .quizTitle {
   margin: 0;
@@ -102,31 +133,131 @@
   font-weight: 700;
 }
 
-/* Кнопка “Играть” */
-.buttonPlay {
+/* Кнопки действий */
+.buttonPlay,
+.buttonEdit,
+.buttonDelete {
   border: none;
-  padding: 9px 14px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+}
+
+/* Кнопка "Играть" */
+.buttonPlay {
   background: #cdecec;
   color: #054a49;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease, background-color .2s ease;
-  box-shadow: 0 2px 8px rgba(7, 87, 91, 0.12);
+  box-shadow: 0 2px 5px rgba(7, 87, 91, 0.1);
 }
-.buttonPlay:hover { transform: translateY(-1px); background: #def2f1; }
-.buttonPlay:active { transform: translateY(0); }
-.buttonPlay:focus-visible { outline: 2px solid #07575b; outline-offset: 3px; }
 
-/* Пустое состояние */
-.emptyState {
+.buttonPlay:hover {
+  background: #b8e0e0;
+  transform: translateY(-1px);
+}
+
+.buttonPlay:active {
+  transform: translateY(0);
+  background: #a3d4d4;
+}
+
+/* Кнопка "Редактировать" */
+.buttonEdit {
+  background: #e8f4fc;
+  color: #2c6ecb;
+  box-shadow: 0 2px 5px rgba(44, 110, 203, 0.1);
+}
+
+.buttonEdit:hover {
+  background: #d9eaf8;
+  transform: translateY(-1px);
+}
+
+.buttonEdit:active {
+  transform: translateY(0);
+  background: #c5dff6;
+}
+
+/* Кнопка "Удалить" */
+.buttonDelete {
+  background: #fce8e8;
+  color: #d32f2f;
+  box-shadow: 0 2px 5px rgba(211, 47, 47, 0.1);
+  flex: 0 0 auto;
+  width: 40px;
+  padding: 8px;
+}
+
+.buttonDelete:hover {
+  background: #f8d7d7;
+  transform: translateY(-1px);
+}
+
+.buttonDelete:active {
+  transform: translateY(0);
+  background: #f5c2c2;
+}
+
+/* Иконки в кнопках */
+.buttonPlay::before {
+  content: '▶';
+  font-size: 0.8em;
+}
+
+.buttonEdit::before {
+  content: '✎';
+  font-size: 0.9em;
+}
+
+.buttonDelete::before {
+  content: '×';
+  font-size: 1.2em;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Состояния загрузки и ошибки */
+.emptyState,
+.error {
   grid-column: 1 / -1; /* растянуть на все колонки списка */
   margin: 0;
   color: #054a49;
   background: #ffffffcc;
   border: 1px dashed #cdecec;
   border-radius: 16px;
-  padding: 16px 18px;
+  padding: 24px;
+  text-align: center;
+  font-size: 1.1em;
+}
+
+.error {
+  color: #d32f2f;
+  background: #fce8e8cc;
+  border-color: #f5c2c2;
+}
+
+/* Индикатор загрузки */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.emptyState::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(7, 87, 91, 0.2);
+  border-radius: 50%;
+  border-top-color: #07575b;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 12px;
 }
 
 /* Сайдбар с лидербордом справа (липкий) */
