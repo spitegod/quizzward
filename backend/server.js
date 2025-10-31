@@ -86,6 +86,17 @@ function initDB() {
     } else {
       console.log('Поле points уже существует в таблице users');
     }
+
+    // Добавляем поле is_banned, если оно не существует
+    const hasIsBannedColumn = columns.some(col => col.name === 'is_banned');
+    if (!hasIsBannedColumn) {
+      db.run('ALTER TABLE users ADD COLUMN is_banned BOOLEAN DEFAULT 0', (err) => {
+        if (err) return console.error('Ошибка при добавлении поля is_banned:', err);
+        console.log('Добавлено поле is_banned в таблицу users');
+      });
+    } else {
+      console.log('Поле is_banned уже существует в таблице users');
+    }
   });
 }
 
@@ -140,6 +151,12 @@ app.post('/login', (req, res) => {
     if (!user) {
       return res.status(400).json({ message: 'Неверный логин или пароль' });
     }
+    
+    // Проверяем, забанен ли пользователь
+    if (user.is_banned) {
+      return res.status(403).json({ message: 'Ваш аккаунт заблокирован. Обратитесь к администратору.' });
+    }
+    
     bcrypt.compare(password, user.password, (err, result) => {
       if (err) return res.status(500).json({ message: 'Ошибка сервера при проверке пароля' });
       if (result) {
@@ -157,10 +174,28 @@ function authenticateToken(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1];
   if (!token) return res.sendStatus(401);
 
-  jwt.verify(token, SECRET_KEY, (err, user) => {
+  jwt.verify(token, SECRET_KEY, async (err, userData) => {
     if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
+    
+    // Проверяем, не забанен ли пользователь
+    db.get('SELECT is_banned FROM users WHERE id = ?', [userData.id], (err, user) => {
+      if (err) {
+        console.error('Ошибка при проверке статуса пользователя:', err);
+        return res.status(500).json({ message: 'Ошибка сервера при проверке статуса пользователя' });
+      }
+      
+      if (!user) {
+        return res.status(401).json({ message: 'Пользователь не найден' });
+      }
+      
+      if (user.is_banned) {
+        return res.status(403).json({ message: 'Ваш аккаунт заблокирован. Обратитесь к администратору.' });
+      }
+      
+      // Если пользователь не забанен, добавляем его данные в запрос
+      req.user = userData;
+      next();
+    });
   });
 }
 
@@ -181,6 +216,143 @@ function checkAdmin(req, res, next) {
     next();
   });
 }
+
+// Получение списка всех пользователей (только для администратора)
+app.get('/api/admin/users', authenticateToken, checkAdmin, (req, res) => {
+  db.all(
+    'SELECT id, login, email, points, is_banned, created_at as registration_date FROM users',
+    [],
+    (err, users) => {
+      if (err) {
+        console.error('Ошибка при получении списка пользователей:', err);
+        return res.status(500).json({ error: 'Ошибка при загрузке списка пользователей' });
+      }
+      res.json(users);
+    }
+  );
+});
+
+// Обновление данных пользователя
+app.put('/api/admin/users/:id', authenticateToken, checkAdmin, (req, res) => {
+  const { login, is_banned } = req.body;
+  const userId = req.params.id;
+
+  // Проверяем, что пользователь существует
+  db.get('SELECT id FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) {
+      console.error('Ошибка при проверке пользователя:', err);
+      return res.status(500).json({ error: 'Ошибка при обновлении пользователя' });
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Обновляем данные пользователя
+    db.run(
+      'UPDATE users SET login = ?, is_banned = ? WHERE id = ?',
+      [login, is_banned ? 1 : 0, userId],
+      function(err) {
+        if (err) {
+          console.error('Ошибка при обновлении пользователя:', err);
+          return res.status(500).json({ error: 'Ошибка при обновлении пользователя' });
+        }
+        res.json({ message: 'Данные пользователя обновлены' });
+      }
+    );
+  });
+});
+
+// Блокировка/разблокировка пользователя
+app.post('/api/admin/users/:id/ban', authenticateToken, checkAdmin, (req, res) => {
+  const { is_banned } = req.body;
+  const userId = req.params.id;
+
+  // Проверяем, что пользователь существует и не является администратором
+  db.get('SELECT id, login FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) {
+      console.error('Ошибка при проверке пользователя:', err);
+      return res.status(500).json({ error: 'Ошибка при блокировке пользователя' });
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    if (user.login === 'admin') {
+      return res.status(400).json({ error: 'Нельзя заблокировать администратора' });
+    }
+
+    // Обновляем статус блокировки
+    db.run(
+      'UPDATE users SET is_banned = ? WHERE id = ?',
+      [is_banned ? 1 : 0, userId],
+      function(err) {
+        if (err) {
+          console.error('Ошибка при обновлении статуса блокировки:', err);
+          return res.status(500).json({ error: 'Ошибка при блокировке пользователя' });
+        }
+        res.json({ message: `Пользователь успешно ${is_banned ? 'заблокирован' : 'разблокирован'}` });
+      }
+    );
+  });
+});
+
+// Удаление пользователя
+app.delete('/api/admin/users/:id', authenticateToken, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+
+  // Проверяем, что пользователь существует и не является администратором
+  db.get('SELECT id, login FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) {
+      console.error('Ошибка при проверке пользователя:', err);
+      return res.status(500).json({ error: 'Ошибка при удалении пользователя' });
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    if (user.login === 'admin') {
+      return res.status(400).json({ error: 'Нельзя удалить администратора' });
+    }
+
+    // Удаляем пользователя
+    db.run('DELETE FROM users WHERE id = ?', [userId], function(err) {
+      if (err) {
+        console.error('Ошибка при удалении пользователя:', err);
+        return res.status(500).json({ error: 'Ошибка при удалении пользователя' });
+      }
+      res.json({ message: 'Пользователь успешно удален' });
+    });
+  });
+});
+
+// Сброс статистики пользователя
+app.post('/api/admin/users/:id/reset-stats', authenticateToken, checkAdmin, (req, res) => {
+  const userId = req.params.id;
+
+  // Проверяем, что пользователь существует
+  db.get('SELECT id FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) {
+      console.error('Ошибка при проверке пользователя:', err);
+      return res.status(500).json({ error: 'Ошибка при сбросе статистики' });
+    }
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    // Сбрасываем статистику пользователя
+    db.run('UPDATE users SET points = 0 WHERE id = ?', [userId], function(err) {
+      if (err) {
+        console.error('Ошибка при сбросе статистики:', err);
+        return res.status(500).json({ error: 'Ошибка при сбросе статистики' });
+      }
+      res.json({ message: 'Статистика пользователя сброшена' });
+    });
+  });
+});
 
 // Получение данных пользователя по ID
 app.get('/api/user/:userId', authenticateToken, (req, res) => {
