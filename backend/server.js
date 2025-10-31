@@ -196,15 +196,35 @@ app.get('/api/user/:userId', authenticateToken, (req, res) => {
           console.error('Ошибка при форматировании даты:', dateError);
         }
         
-        // Возвращаем данные пользователя
-        res.json({
-          id: user.id,
-          username: user.login || 'Пользователь',
-          email: user.email || '',
-          points: user.points || 0,
-          registrationDate: formattedDate,
-          completedQuizzes: 0 // Пока всегда 0 для простоты
-        });
+        // Получаем количество пройденных викторин
+        db.get(
+          'SELECT COUNT(DISTINCT quiz_id) as completed_count FROM quiz_results WHERE user_id = ?',
+          [user.id],
+          (err, result) => {
+            if (err) {
+              console.error('Ошибка при получении количества пройденных викторин:', err);
+              // В случае ошибки возвращаем 0
+              return res.json({
+                id: user.id,
+                username: user.login || 'Пользователь',
+                email: user.email || '',
+                points: user.points || 0,
+                registrationDate: formattedDate,
+                completedQuizzes: 0
+              });
+            }
+            
+            // Возвращаем данные пользователя с количеством пройденных викторин
+            res.json({
+              id: user.id,
+              username: user.login || 'Пользователь',
+              email: user.email || '',
+              points: user.points || 0,
+              registrationDate: formattedDate,
+              completedQuizzes: result ? result.completed_count : 0
+            });
+          }
+        );
       }
     );
   } catch (error) {
@@ -248,15 +268,35 @@ app.get('/api/user', authenticateToken, (req, res) => {
           console.error('Ошибка при форматировании даты:', dateError);
         }
         
-        // Возвращаем минимальный набор данных
-        res.json({
-          id: user.id,
-          username: user.login || 'Пользователь',
-          email: user.email || '',
-          points: user.points || 0,
-          registrationDate: formattedDate,
-          completedQuizzes: 0 // Пока всегда 0 для отладки
-        });
+        // Получаем количество пройденных викторин
+        db.get(
+          'SELECT COUNT(DISTINCT quiz_id) as completed_count FROM quiz_results WHERE user_id = ?',
+          [user.id],
+          (err, result) => {
+            if (err) {
+              console.error('Ошибка при получении количества пройденных викторин:', err);
+              // В случае ошибки возвращаем 0
+              return res.json({
+                id: user.id,
+                username: user.login || 'Пользователь',
+                email: user.email || '',
+                points: user.points || 0,
+                registrationDate: formattedDate,
+                completedQuizzes: 0
+              });
+            }
+            
+            // Возвращаем данные пользователя с количеством пройденных викторин
+            res.json({
+              id: user.id,
+              username: user.login || 'Пользователь',
+              email: user.email || '',
+              points: user.points || 0,
+              registrationDate: formattedDate,
+              completedQuizzes: result ? result.completed_count : 0
+            });
+          }
+        );
       }
     );
   } catch (error) {
