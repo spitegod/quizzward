@@ -65,7 +65,7 @@ function Dashboard() {
           <div className={s.buttonsContainer}>
             {isAdmin && (
               <button
-                onClick={() => navigate("/admin")}
+                onClick={() => navigate("/users-admin")}
                 className={`${s.buttonCreate} ${s.adminButton}`}
               >
                 Перейти в панель администратора
