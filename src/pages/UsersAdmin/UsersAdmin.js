@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
+import { FiSearch } from 'react-icons/fi';
 import 'react-toastify/dist/ReactToastify.css';
 import NavAdmin from '../../components/NavAdmin/NavAdmin';
 import UserEditModal from '../../components/UserEditModal/UserEditModal';
@@ -17,6 +18,19 @@ const UsersAdmin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter users based on search term
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm.trim()) return users;
+    
+    const term = searchTerm.toLowerCase().trim();
+    return users.filter(user => 
+      (user.login && user.login.toLowerCase().includes(term)) ||
+      (user.email && user.email.toLowerCase().includes(term)) ||
+      (user.role && user.role.toLowerCase().includes(term))
+    );
+  }, [users, searchTerm]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -105,7 +119,19 @@ const UsersAdmin = () => {
       <div className={s.page}>
         <NavAdmin />
         <div className={s.content}>
-          <h2 className={s.h2}>Список пользователей</h2>
+          <div className={s.header}>
+            <h2 className={s.pageTitle}>Пользователи</h2>
+            <div className={s.searchContainer}>
+              <FiSearch className={s.searchIcon} />
+              <input
+                type="text"
+                placeholder="Поиск по логину, email или роли..."
+                className={s.searchInput}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
           <div className={s.loading}>Загрузка пользователей...</div>
         </div>
       </div>
@@ -116,52 +142,82 @@ const UsersAdmin = () => {
     <div className={s.page}>
       <NavAdmin />
       <div className={s.content}>
-        <h2 className={s.h2}>Список пользователей</h2>
-        
-        <div className={s.card}>
-          <div className={s.tableWrap}>
-            <table className={s.table}>
-              <thead>
-                <tr>
-                  <th className={s.colIndex}>№</th>
-                  <th>Логин</th>
-                  <th>Email</th>
-                  <th>Очки</th>
-                  <th>Статус</th>
-                  <th>Дата регистрации</th>
-                  <th>Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user, index) => (
-                  <tr key={user.id} className={user.is_banned ? s.bannedUser : ''}>
-                    <td className={s.colIndex}>{index + 1}</td>
-                    <td>{user.login}</td>
-                    <td>{user.email || 'Не указан'}</td>
-                    <td>{user.points || 0}</td>
-                    <td>
-                      <span className={user.is_banned ? s.bannedStatus : s.activeStatus}>
-                        {user.is_banned ? 'Заблокирован' : 'Активен'}
-                      </span>
-                    </td>
-                    <td>{user.registration_date || 'Неизвестно'}</td>
-                    <td>
-                      <div className={s.actions}>
-                        <button
-                          className={s.editButton}
-                          onClick={() => handleEditUser(user)}
-                          disabled={user.login === 'admin'}
-                          title={user.login === 'admin' ? 'Редактирование администратора запрещено' : 'Редактировать пользователя'}
-                        >
-                          Редактировать
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className={s.header}>
+          <h2 className={s.pageTitle}>Пользователи</h2>
+          <div className={s.searchContainer}>
+            <div className={s.searchInputContainer}>
+              <FiSearch className={s.searchIcon} />
+              <input
+                type="text"
+                placeholder="Поиск по логину, email или роли..."
+                className={s.searchInput}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searchTerm && (
+                <button 
+                  className={s.clearButton}
+                  onClick={() => setSearchTerm('')}
+                  aria-label="Очистить поиск"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
+        </div>
+        <div className={s.card}>
+          {error ? (
+            <div className={s.error}>{error}</div>
+          ) : filteredUsers.length === 0 ? (
+            <div className={s.emptyState}>
+              {searchTerm ? 'Пользователи не найдены. Попробуйте изменить параметры поиска.' : 'Нет пользователей'}
+            </div>
+          ) : (
+            <div className={s.tableContainer}>
+              <table className={s.userTable}>
+                <thead>
+                  <tr>
+                    <th>№</th>
+                    <th>Логин</th>
+                    <th>Email</th>
+                    <th>Очки</th>
+                    <th>Статус</th>
+                    <th>Дата регистрации</th>
+                    <th>Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user, index) => (
+                    <tr key={user.id} className={user.is_banned ? s.bannedUser : ''}>
+                      <td className={s.colIndex}>{index + 1}</td>
+                      <td>{user.login}</td>
+                      <td>{user.email || 'Не указан'}</td>
+                      <td>{user.points || 0}</td>
+                      <td>
+                        <span className={user.is_banned ? s.bannedStatus : s.activeStatus}>
+                          {user.is_banned ? 'Заблокирован' : 'Активен'}
+                        </span>
+                      </td>
+                      <td>{user.registration_date || 'Неизвестно'}</td>
+                      <td>
+                        <div className={s.actions}>
+                          <button
+                            className={s.editButton}
+                            onClick={() => handleEditUser(user)}
+                            disabled={user.login === 'admin'}
+                            title={user.login === 'admin' ? 'Редактирование администратора запрещено' : 'Редактировать пользователя'}
+                          >
+                            Редактировать
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

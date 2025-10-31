@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { FiSearch } from 'react-icons/fi';
 import NavAdmin from '../../components/NavAdmin/NavAdmin';
 import { getQuizzes, deleteQuiz } from '../../services/quizService';
 import s from './QuizzesAdmin.module.css';
@@ -10,7 +11,20 @@ const QuizzesAdmin = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
+
+  // Filter quizzes based on search term
+  const filteredQuizzes = useMemo(() => {
+    if (!searchTerm) return quizzes;
+    
+    const term = searchTerm.toLowerCase();
+    return quizzes.filter(quiz => 
+      quiz.title.toLowerCase().includes(term) ||
+      (quiz.description && quiz.description.toLowerCase().includes(term)) ||
+      (quiz.author && quiz.author.toLowerCase().includes(term))
+    );
+  }, [quizzes, searchTerm]);
 
   useEffect(() => {
     const fetchQuizzes = async () => {
@@ -76,12 +90,26 @@ const QuizzesAdmin = () => {
     <div className={s.page}>
       <NavAdmin />
       <div className={s.content}>
-        <h2 className={s.h2}>Управление викторинами</h2>
+        <div className={s.header}>
+          <h2 className={s.h2}>Управление викторинами</h2>
+          <div className={s.searchContainer}>
+            <FiSearch className={s.searchIcon} />
+            <input
+              type="text"
+              placeholder="Поиск по названию, описанию или автору..."
+              className={s.searchInput}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
         
         {error ? (
           <div className={s.error}>{error}</div>
-        ) : quizzes.length === 0 ? (
-          <div className={s.emptyState}>Нет доступных викторин</div>
+        ) : filteredQuizzes.length === 0 ? (
+          <div className={s.emptyState}>
+            {searchTerm ? 'Ничего не найдено. Попробуйте изменить параметры поиска.' : 'Нет доступных викторин'}
+          </div>
         ) : (
           <div className={s.quizzesTable}>
             <table className={s.table}>
@@ -97,7 +125,7 @@ const QuizzesAdmin = () => {
                 </tr>
               </thead>
               <tbody>
-                {quizzes.map((quiz, index) => (
+                {filteredQuizzes.map((quiz, index) => (
                   <tr key={quiz.id} className={s.quizRow}>
                     <td className={s.colIndex}>{index + 1}</td>
                     <td className={s.quizTitle} title={quiz.title}>
