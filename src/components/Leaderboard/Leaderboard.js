@@ -6,7 +6,6 @@ const Leaderboard = () => {
     const [leaderboardData, setLeaderboardData] = useState({
         topUsers: [],
         currentUser: null,
-        loading: true,
         error: null
     });
 
@@ -27,14 +26,12 @@ const Leaderboard = () => {
                 setLeaderboardData({
                     topUsers: response.data.topUsers || [],
                     currentUser: response.data.currentUser,
-                    loading: false,
                     error: null
                 });
             } catch (error) {
                 console.error('Ошибка при загрузке таблицы лидеров:', error);
                 setLeaderboardData(prev => ({
                     ...prev,
-                    loading: false,
                     error: 'Не удалось загрузить таблицу лидеров'
                 }));
             }
@@ -43,10 +40,9 @@ const Leaderboard = () => {
         fetchLeaderboard();
     }, []);
 
-    const { topUsers, currentUser, loading, error } = leaderboardData;
+    const { topUsers, currentUser, error } = leaderboardData;
     const isCurrentUserInTop = currentUser && topUsers.some(user => user.id === currentUser.id);
 
-    if (loading) return <div>Загрузка таблицы лидеров...</div>;
     if (error) return <div className={s.error}>{error}</div>;
 
     return (

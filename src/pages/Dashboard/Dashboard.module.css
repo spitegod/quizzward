@@ -115,11 +115,12 @@
   flex-direction: column;
   background: #fff;
   border-radius: 16px;
-  padding: 18px 20px;
+  padding: 20px;
   border: 1px solid #cdecec;
   box-shadow: 0 2px 8px rgba(7, 87, 91, 0.12);
   transition: all 0.2s ease;
-  min-height: 120px;
+  min-height: 140px;
+  position: relative;
 }
 
 .quizItem:hover {
@@ -129,7 +130,12 @@
 }
 
 .quizInfo {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  flex-grow: 1;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .quizDescription {
@@ -149,10 +155,11 @@
 
 .quizActions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-top: auto;
-  padding-top: 8px;
+  padding-top: 12px;
   border-top: 1px solid #e8f4f4;
+  flex-wrap: wrap;
 }
 
 .quizTitle {
@@ -166,9 +173,9 @@
 .buttonEdit,
 .buttonDelete {
   border: none;
-  padding: 8px 12px;
+  padding: 8px 0;
   border-radius: 8px;
-  font-size: 0.85em;
+  font-size: 0.9em;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -176,7 +183,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  flex: 1;
+  min-width: 80px;
+  flex: 1 1 auto;
+  white-space: nowrap;
 }
 
 /* Кнопка "Играть" */

@@ -11,7 +11,6 @@ function Dashboard() {
   const navigate = useNavigate();
   const [myQuizzes, setMyQuizzes] = useState([]);
   const [publicQuizzes, setPublicQuizzes] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem('token');
@@ -27,8 +26,6 @@ function Dashboard() {
         console.error('Ошибка при загрузке викторин:', err);
         setError('Не удалось загрузить викторины. Пожалуйста, попробуйте снова.');
         toast.error('Ошибка при загрузке викторин');
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -69,15 +66,17 @@ function Dashboard() {
         <div className={s.contentArea}>
           {/* Мои викторины */}
           <h3 className={s.sectionTitle}>Мои викторины</h3>
-          <div className={s.quizGrid}>
-            {isLoading ? (
-              <p className={s.emptyState}>Загрузка викторин...</p>
-            ) : error ? (
+          {error ? (
+            <div className={s.quizGrid}>
               <p className={s.error}>{error}</p>
-            ) : myQuizzes.length === 0 ? (
+            </div>
+          ) : myQuizzes.length === 0 ? (
+            <div className={s.quizGrid}>
               <p className={s.emptyState}>У вас пока нет созданных викторин</p>
-            ) : (
-              myQuizzes.map((quiz) => (
+            </div>
+          ) : (
+            <div className={s.quizGrid}>
+              {myQuizzes.map((quiz) => (
                 <div key={quiz.id} className={s.quizItem}>
                   <div className={s.quizInfo}>
                     <h3 className={s.quizTitle}>{quiz.title}</h3>
@@ -108,13 +107,13 @@ function Dashboard() {
                     </button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Викторины других игроков */}
           {publicQuizzes.length > 0 && (
-            <>
+            <div>
               <h3 className={s.sectionTitle}>Викторины от других игроков</h3>
               <div className={s.quizGrid}>
                 {publicQuizzes.map((quiz) => (
@@ -138,7 +137,7 @@ function Dashboard() {
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
 
