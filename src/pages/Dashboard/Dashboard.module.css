@@ -46,6 +46,24 @@
   text-shadow: 0 1px 0 rgba(255,255,255,0.3);
 }
 
+/* Контейнер для кнопок */
+.buttonsContainer {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Стили для кнопки админа */
+.adminButton {
+  background-color: #ff9800 !important; /* Оранжевый цвет для кнопки админа */
+  border: 1px solid #e68a00 !important;
+}
+
+.adminButton:hover {
+  background-color: #e68a00 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Тулбар (кнопки, фильтры) */
 .toolbar {
   grid-area: toolbar;

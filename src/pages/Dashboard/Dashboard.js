@@ -4,6 +4,7 @@ import Nav from "../../components/Nav/Nav";
 import { useEffect, useState } from "react";
 import Leaderboard from "../../components/Leaderboard/Leaderboard";
 import { getQuizzes, deleteQuiz } from "../../services/quizService";
+import { getCurrentUser } from "../../services/userService";
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -12,24 +13,30 @@ function Dashboard() {
   const [myQuizzes, setMyQuizzes] = useState([]);
   const [publicQuizzes, setPublicQuizzes] = useState([]);
   const [error, setError] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    const fetchQuizzes = async () => {
+    const fetchData = async () => {
       try {
+        // Загружаем данные пользователя
+        const userData = await getCurrentUser();
+        setIsAdmin(userData.username === 'admin');
+
+        // Загружаем викторины
         const data = await getQuizzes(token);
         setMyQuizzes(data.myQuizzes || []);
         setPublicQuizzes(data.publicQuizzes || []);
         setError(null);
       } catch (err) {
-        console.error('Ошибка при загрузке викторин:', err);
-        setError('Не удалось загрузить викторины. Пожалуйста, попробуйте снова.');
-        toast.error('Ошибка при загрузке викторин');
+        console.error('Ошибка при загрузке данных:', err);
+        setError('Не удалось загрузить данные. Пожалуйста, попробуйте снова.');
+        toast.error('Ошибка при загрузке данных');
       }
     };
 
-    fetchQuizzes();
+    fetchData();
   }, [token]);
 
   const handleDeleteQuiz = async (id, e) => {
@@ -55,12 +62,22 @@ function Dashboard() {
         <h2 className={s.dashboardMainText}>Главная страница</h2>
 
         <div className={s.toolbar}>
-          <button
-            onClick={() => navigate("/create-quiz")}
-            className={s.buttonCreate}
-          >
-            Создать викторину
-          </button>
+          <div className={s.buttonsContainer}>
+            {isAdmin && (
+              <button
+                onClick={() => navigate("/admin")}
+                className={`${s.buttonCreate} ${s.adminButton}`}
+              >
+                Перейти в панель администратора
+              </button>
+            )}
+            <button
+              onClick={() => navigate("/create-quiz")}
+              className={s.buttonCreate}
+            >
+              Создать викторину
+            </button>
+          </div>
         </div>
 
         <div className={s.contentArea}>
