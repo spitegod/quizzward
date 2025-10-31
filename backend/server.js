@@ -285,26 +285,55 @@ app.get('/quizzes/my', authenticateToken, (req, res) => {
 });
 
 // Получение викторины по ID с вопросами
-// Получение всех викторин пользователя
+// Получение всех викторин (своих и публичных от других пользователей)
 app.get('/api/quizzes', authenticateToken, (req, res) => {
   const userId = req.user.id;
   
+  // Получаем свои викторины
   db.all(
     `SELECT q.id, q.title, q.description, q.created_at, 
       COUNT(qu.id) as questions_count,
-      u.login as author
+      u.login as author,
+      1 as is_owner
      FROM quizzes q
      LEFT JOIN questions qu ON q.id = qu.quiz_id
      LEFT JOIN users u ON q.user_id = u.id
      WHERE q.user_id = ?
-     GROUP BY q.id`,
+     GROUP BY q.id
+     ORDER BY q.created_at DESC`,
     [userId],
-    (err, quizzes) => {
+    (err, myQuizzes) => {
       if (err) {
         console.error('Ошибка при получении викторин:', err);
         return res.status(500).json({ error: 'Ошибка сервера' });
       }
-      res.json(quizzes);
+      
+      // Получаем публичные викторины других пользователей
+      db.all(
+        `SELECT q.id, q.title, q.description, q.created_at, 
+          COUNT(qu.id) as questions_count,
+          u.login as author,
+          0 as is_owner
+         FROM quizzes q
+         LEFT JOIN questions qu ON q.id = qu.quiz_id
+         LEFT JOIN users u ON q.user_id = u.id
+         WHERE q.user_id != ? AND q.is_public = 1
+         GROUP BY q.id
+         ORDER BY q.created_at DESC`,
+        [userId],
+        (err, publicQuizzes) => {
+          if (err) {
+            console.error('Ошибка при получении публичных викторин:', err);
+            return res.status(500).json({ error: 'Ошибка сервера' });
+          }
+          
+          // Возвращаем обе группы викторин
+          res.json({
+            myQuizzes: myQuizzes || [],
+            publicQuizzes: publicQuizzes || []
+          });
+        }
+      );
     }
   );
 });

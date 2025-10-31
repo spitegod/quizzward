@@ -9,7 +9,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [quizzes, setQuizzes] = useState([]);
+  const [myQuizzes, setMyQuizzes] = useState([]);
+  const [publicQuizzes, setPublicQuizzes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -19,7 +20,8 @@ function Dashboard() {
     const fetchQuizzes = async () => {
       try {
         const data = await getQuizzes(token);
-        setQuizzes(data);
+        setMyQuizzes(data.myQuizzes || []);
+        setPublicQuizzes(data.publicQuizzes || []);
         setError(null);
       } catch (err) {
         console.error('Ошибка при загрузке викторин:', err);
@@ -38,7 +40,9 @@ function Dashboard() {
     if (window.confirm('Вы уверены, что хотите удалить эту викторину?')) {
       try {
         await deleteQuiz(id, token);
-        setQuizzes(quizzes.filter(quiz => quiz.id !== id));
+        // Удаляем викторину из обоих списков
+        setMyQuizzes(prev => prev.filter(quiz => quiz.id !== id));
+        setPublicQuizzes(prev => prev.filter(quiz => quiz.id !== id));
         toast.success('Викторина успешно удалена');
       } catch (err) {
         console.error('Ошибка при удалении викторины:', err);
@@ -62,48 +66,79 @@ function Dashboard() {
           </button>
         </div>
 
-        <h3 className={s.myQuizzes}>Мои викторины</h3>
+        <div className={s.contentArea}>
+          {/* Мои викторины */}
+          <h3 className={s.sectionTitle}>Мои викторины</h3>
+          <div className={s.quizGrid}>
+            {isLoading ? (
+              <p className={s.emptyState}>Загрузка викторин...</p>
+            ) : error ? (
+              <p className={s.error}>{error}</p>
+            ) : myQuizzes.length === 0 ? (
+              <p className={s.emptyState}>У вас пока нет созданных викторин</p>
+            ) : (
+              myQuizzes.map((quiz) => (
+                <div key={quiz.id} className={s.quizItem}>
+                  <div className={s.quizInfo}>
+                    <h3 className={s.quizTitle}>{quiz.title}</h3>
+                    {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
+                    <p className={s.quizMeta}>
+                      Вопросов: {quiz.questions_count || 0} • 
+                      Автор: {quiz.author}
+                    </p>
+                  </div>
+                  <div className={s.quizActions}>
+                    <button
+                      onClick={() => navigate(`/play-quiz/${quiz.id}`)}
+                      className={s.buttonPlay}
+                    >
+                      Играть
+                    </button>
+                    <button
+                      onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
+                      className={s.buttonEdit}
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteQuiz(quiz.id, e)}
+                      className={s.buttonDelete}
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
-        <div className={s.quizGrid}>
-          {isLoading ? (
-            <p className={s.emptyState}>Загрузка викторин...</p>
-          ) : error ? (
-            <p className={s.error}>{error}</p>
-          ) : quizzes.length === 0 ? (
-            <p className={s.emptyState}>Викторины пока не созданы</p>
-          ) : (
-            quizzes.map((quiz) => (
-              <div key={quiz.id} className={s.quizItem}>
-                <div className={s.quizInfo}>
-                  <h3 className={s.quizTitle}>{quiz.title}</h3>
-                  {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
-                  <p className={s.quizMeta}>
-                    Вопросов: {quiz.questions_count || 0} • 
-                    Автор: {quiz.author}
-                  </p>
-                </div>
-                <div className={s.quizActions}>
-                  <button
-                    onClick={() => navigate(`/play-quiz/${quiz.id}`)}
-                    className={s.buttonPlay}
-                  >
-                    Играть
-                  </button>
-                  <button
-                    onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
-                    className={s.buttonEdit}
-                  >
-                    Редактировать
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteQuiz(quiz.id, e)}
-                    className={s.buttonDelete}
-                  >
-                    Удалить
-                  </button>
-                </div>
+          {/* Викторины других игроков */}
+          {publicQuizzes.length > 0 && (
+            <>
+              <h3 className={s.sectionTitle}>Викторины от других игроков</h3>
+              <div className={s.quizGrid}>
+                {publicQuizzes.map((quiz) => (
+                  <div key={quiz.id} className={s.quizItem}>
+                    <div className={s.quizInfo}>
+                      <h3 className={s.quizTitle}>{quiz.title}</h3>
+                      {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
+                      <p className={s.quizMeta}>
+                        Вопросов: {quiz.questions_count || 0} • 
+                        Автор: {quiz.author}
+                      </p>
+                    </div>
+                    <div className={s.quizActions}>
+                      <button
+                        onClick={() => navigate(`/play-quiz/${quiz.id}`)}
+                        className={s.buttonPlay}
+                      >
+                        Играть
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))
+            </>
           )}
         </div>
 
