@@ -1,0 +1,156 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 10px;
+  padding: 25px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #34495e;
+}
+
+.formGroup input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.formGroup input[type="text"]:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.formGroup input[type="checkbox"] {
+  margin-right: 8px;
+  transform: scale(1.2);
+}
+
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.buttonGroup button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.buttonGroup button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.saveButton {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #27ae60;
+}
+
+.banButton {
+  background-color: #f39c12;
+  color: white;
+}
+
+.banButton:hover:not(:disabled) {
+  background-color: #d35400;
+}
+
+.resetButton {
+  background-color: #3498db;
+  color: white;
+}
+
+.resetButton:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.deleteButton {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background-color: #c0392b;
+}
+
+.cancelButton {
+  background-color: #ecf0f1;
+  color: #7f8c8d;
+  margin-left: auto;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #bdc3c7;
+}
+
+@media (max-width: 600px) {
+  .modal {
+    padding: 15px;
+  }
+  
+  .buttonGroup {
+    flex-direction: column;
+  }
+  
+  .buttonGroup button {
+    width: 100%;
+  }
+  
+  .cancelButton {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}
