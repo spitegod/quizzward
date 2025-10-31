@@ -9,12 +9,12 @@
 
 
 .profileMain {
-  max-width: 960px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
   padding: 24px 16px;
   display: grid;
-  gap: 20px;
+  gap: 24px;
 }
 
 .header {
@@ -60,9 +60,16 @@
 }
 
 .card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 16px;
-  box-shadow: 0 2px 10px rgba(7, 87, 91, 0.14);
-  border: 1px solid #cdecec;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.quizzesSection {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 16px;
 }

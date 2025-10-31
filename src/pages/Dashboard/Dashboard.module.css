@@ -12,17 +12,25 @@
   box-sizing: border-box;
   padding: 24px 28px 40px;
   width: 100%;
+  max-width: 1800px;
   margin: 0 auto;
 
   display: grid;
-  grid-template-columns: 1fr 1fr 420px;          /* две широкие колонки + сайдбар */
+  grid-template-columns: 1fr 1fr 380px;  /* Основные колонки + сайдбар */
   grid-template-areas:
     "title   title   sidebar"
     "toolbar toolbar sidebar"
-    "myq     myq     sidebar"
-    "list    list    sidebar";
+    "content content sidebar";
   column-gap: 24px;
-  row-gap: 16px;
+  row-gap: 20px;
+}
+
+/* Основная область контента */
+.contentArea {
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
 /* Заголовок */
@@ -38,11 +46,291 @@
   text-shadow: 0 1px 0 rgba(255,255,255,0.3);
 }
 
+/* Контейнер для кнопок */
+.buttonsContainer {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Стили для кнопки админа */
+.adminButton {
+  background-color: #ff9800 !important; /* Оранжевый цвет для кнопки админа */
+  border: 1px solid #e68a00 !important;
+}
+
+.adminButton:hover {
+  background-color: #e68a00 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Тулбар (кнопки, фильтры) */
 .toolbar {
   grid-area: toolbar;
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+/* Контейнер для поиска и фильтров */
+.searchContainer {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
+  align-items: flex-start;
+  background: #f8fdfd;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(7, 87, 91, 0.1);
+  margin-bottom: 10px;
+}
+
+/* Поле поиска */
+.searchInput {
+  flex: 1;
+  min-width: 250px;
+  padding: 10px 14px;
+  border: 1px solid #cdecec;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #07575b;
+  background-color: #fff;
+  transition: all 0.2s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #4db6ac;
+  box-shadow: 0 0 0 2px rgba(77, 182, 172, 0.2);
+}
+
+.searchInput::placeholder {
+  color: #90a4ae;
+}
+
+/* Группа фильтров */
+.filterGroup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.filterGroup label {
+  font-size: 0.8rem;
+  color: #5c7a7a;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+/* Выпадающий список категорий */
+.categorySelect {
+  position: relative;
+  min-width: 200px;
+}
+
+.selectedCategories {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid #cdecec;
+  border-radius: 8px;
+  background-color: #fff;
+  cursor: pointer;
+  min-height: 40px;
+  transition: all 0.2s ease;
+}
+
+.selectedCategories:hover {
+  border-color: #4db6ac;
+}
+
+.selectedCategories.active {
+  border-color: #26a69a;
+  box-shadow: 0 0 0 2px rgba(38, 166, 154, 0.2);
+}
+
+.categoryTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.placeholder {
+  color: #90a4ae;
+  font-size: 0.9rem;
+}
+
+.arrow {
+  color: #5c7a7a;
+  font-size: 0.7rem;
+  transition: transform 0.2s ease;
+}
+
+.selectedCategories.active .arrow {
+  transform: rotate(180deg);
+}
+
+.categoryDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #cdecec;
+  border-radius: 8px;
+  margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  padding: 8px 0;
+}
+
+.categoryOption {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+  padding-left: 35px;
+}
+
+.categoryOption:hover {
+  background-color: #f0f9f9;
+}
+
+/* Hide the default checkbox */
+.categoryOption input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+/* Custom checkbox */
+.checkmark {
+  height: 16px;
+  width: 16px;
+  border: 1px solid #cdecec;
+  border-radius: 3px;
+  margin-right: 8px;
+  position: absolute;
+  background-color: #fff;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.categoryOption input:checked + .checkmark {
+  background-color: #26a69a;
+  border-color: #26a69a;
+}
+
+.categoryOption input:checked + .checkmark::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 0.7rem;
+}
+
+.noCategories {
+  padding: 8px 16px;
+  color: #90a4ae;
+  font-size: 0.9rem;
+}
+
+/* Стили для выпадающего списка количества вопросов */
+.selectInput {
+  padding: 8px 12px;
+  border: 1px solid #cdecec;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #07575b;
+  background-color: #fff;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c7a7a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  transition: all 0.2s ease;
+}
+
+.selectInput:focus {
+  outline: none;
+  border-color: #4db6ac;
+  box-shadow: 0 0 0 2px rgba(77, 182, 172, 0.2);
+}
+
+/* Кнопка сброса фильтров */
+.resetButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.resetButton:hover {
+  background-color: #e9ecef;
+  color: #495057;
+  border-color: #ced4da;
+}
+
+.resetButton:active {
+  background-color: #dee2e6;
+  transform: translateY(1px);
+}
+
+/* Счетчик викторин */
+.quizCount {
+  margin-left: 8px;
+  font-size: 0.8em;
+  color: #5c7a7a;
+  font-weight: normal;
+  background-color: #e0f2f1;
+  padding: 2px 8px;
+  border-radius: 12px;
+  vertical-align: middle;
+}
+
+/* Сообщения о загрузке и пустых результатах */
+.loading,
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #5c7a7a;
+  padding: 20px;
+  background: #f8fdfd;
+  border-radius: 8px;
+  border: 1px dashed #cdecec;
+}
+
+.error {
+  color: #d32f2f;
+  text-align: center;
+  padding: 20px;
+  background: #ffebee;
+  border-radius: 8px;
+  border: 1px solid #ffcdd2;
 }
 
 /* Кнопка “Создать викторину” */
@@ -61,40 +349,172 @@
 .buttonCreate:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(7, 87, 91, 0.22); }
 .buttonCreate:focus-visible { outline: 2px solid #cdecec; outline-offset: 3px; }
 
-/* Подзаголовок */
-.myQuizzes {
-  grid-area: myq;
-  margin: 6px 0 0;
-  font-size: 1.1rem;
+/* Заголовки разделов */
+.sectionTitle {
+  grid-column: 1 / -1;
+  margin: 20px 0 12px;
+  font-size: 1.3rem;
   color: #07575b;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: .4px;
+  letter-spacing: 0.4px;
+  border-bottom: 2px solid #cdecec;
+  padding-bottom: 8px;
 }
 
-/* Сетка карточек викторин на ДВЕ колонки зоны (3 карточки в ряд) */
+/* Отступ перед первым разделом */
+.sectionTitle:first-of-type {
+  margin-top: 0;
+}
+
+/* Сетка карточек викторин */
 .quizGrid {
-  grid-area: list;
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(3, minmax(240px, 1fr));  /* 3 колонки под 1920 */
-  gap: 16px;
-  align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+  min-height: 100px; /* Минимальная высота для лучшего UX при загрузке */
+}
+
+/* Адаптивность сетки */
+@media (max-width: 1200px) {
+  .quizGrid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .quizGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .searchContainer {
+    flex-direction: column;
+  }
+  
+  .filterGroup {
+    width: 100%;
+  }
+  
+  .searchInput {
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .categorySelect {
+    width: 100%;
+  }
+  
+  .selectInput {
+    width: 100%;
+  }
 }
 
 /* Карточка викторины */
 .quizItem {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   background: #fff;
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 20px;
   border: 1px solid #cdecec;
   box-shadow: 0 2px 8px rgba(7, 87, 91, 0.12);
-  transition: background-color .2s ease, transform .08s ease;
-  min-height: 72px;
+  transition: all 0.2s ease;
+  min-height: 140px;
+  position: relative;
 }
-.quizItem:hover { background-color: #def2f1; }
+
+.quizItem:hover {
+  background-color: #f8fdfd;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(7, 87, 91, 0.15);
+}
+
+.quizInfo {
+  margin-bottom: 12px;
+  flex-grow: 1;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.quizDescription {
+  color: #5c7a7a;
+  font-size: 0.95em;
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.quizMetaContainer {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.quizMeta {
+  font-size: 0.85em;
+  color: #7f9c9c;
+  margin: 0 0 6px 0;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quizCategories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  width: 100%;
+}
+
+.categoryTag {
+  display: inline-block;
+  background-color: #e0f2f1;
+  color: #00796b;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  line-height: 1.4;
+}
+
+.moreCategories {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  color: #757575;
+  width: 24px;
+  height: 20px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.noCategories {
+  font-size: 0.8em;
+  color: #9e9e9e;
+  font-style: italic;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+.quizActions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e8f4f4;
+  flex-wrap: wrap;
+}
 
 .quizTitle {
   margin: 0;
@@ -102,31 +522,133 @@
   font-weight: 700;
 }
 
-/* Кнопка “Играть” */
-.buttonPlay {
+/* Кнопки действий */
+.buttonPlay,
+.buttonEdit,
+.buttonDelete {
   border: none;
-  padding: 9px 14px;
-  border-radius: 12px;
+  padding: 8px 0;
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 80px;
+  flex: 1 1 auto;
+  white-space: nowrap;
+}
+
+/* Кнопка "Играть" */
+.buttonPlay {
   background: #cdecec;
   color: #054a49;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform .12s ease, box-shadow .12s ease, background-color .2s ease;
-  box-shadow: 0 2px 8px rgba(7, 87, 91, 0.12);
+  box-shadow: 0 2px 5px rgba(7, 87, 91, 0.1);
 }
-.buttonPlay:hover { transform: translateY(-1px); background: #def2f1; }
-.buttonPlay:active { transform: translateY(0); }
-.buttonPlay:focus-visible { outline: 2px solid #07575b; outline-offset: 3px; }
 
-/* Пустое состояние */
-.emptyState {
+.buttonPlay:hover {
+  background: #b8e0e0;
+  transform: translateY(-1px);
+}
+
+.buttonPlay:active {
+  transform: translateY(0);
+  background: #a3d4d4;
+}
+
+/* Кнопка "Редактировать" */
+.buttonEdit {
+  background: #e8f4fc;
+  color: #2c6ecb;
+  box-shadow: 0 2px 5px rgba(44, 110, 203, 0.1);
+}
+
+.buttonEdit:hover {
+  background: #d9eaf8;
+  transform: translateY(-1px);
+}
+
+.buttonEdit:active {
+  transform: translateY(0);
+  background: #c5dff6;
+}
+
+/* Кнопка "Удалить" */
+.buttonDelete {
+  background: #fce8e8;
+  color: #d32f2f;
+  box-shadow: 0 2px 5px rgba(211, 47, 47, 0.1);
+  flex: 0 0 auto;
+  width: 40px;
+  padding: 8px;
+}
+
+.buttonDelete:hover {
+  background: #f8d7d7;
+  transform: translateY(-1px);
+}
+
+.buttonDelete:active {
+  transform: translateY(0);
+  background: #f5c2c2;
+}
+
+/* Иконки в кнопках */
+.buttonPlay::before {
+  content: '▶';
+  font-size: 0.8em;
+}
+
+.buttonEdit::before {
+  content: '✎';
+  font-size: 0.9em;
+}
+
+.buttonDelete::before {
+  content: '×';
+  font-size: 1.2em;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Состояния загрузки и ошибки */
+.emptyState,
+.error {
   grid-column: 1 / -1; /* растянуть на все колонки списка */
   margin: 0;
   color: #054a49;
   background: #ffffffcc;
   border: 1px dashed #cdecec;
   border-radius: 16px;
-  padding: 16px 18px;
+  padding: 24px;
+  text-align: center;
+  font-size: 1.1em;
+}
+
+.error {
+  color: #d32f2f;
+  background: #fce8e8cc;
+  border-color: #f5c2c2;
+}
+
+/* Индикатор загрузки */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.emptyState::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(7, 87, 91, 0.2);
+  border-radius: 50%;
+  border-top-color: #07575b;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 12px;
 }
 
 /* Сайдбар с лидербордом справа (липкий) */

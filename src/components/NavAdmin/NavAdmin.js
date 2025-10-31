@@ -6,10 +6,8 @@ function NavAdmin() {
         <nav className={s.navigation}>
             <div className={s.navLeft}>
                 <div className={s.navAdminLogoContainer}>
-
-                <Link to="/admin" className={s.navAdminLogo}>АдминПанель</Link>
+                    <Link to="/users-admin" className={s.navAdminLogo}>АдминПанель</Link>
                 </div>
-                <Link to="/admin" className={`${s.navLink} ${s.active}`}>Главная</Link>
                 <Link to="/users-admin" className={s.navLink}>Пользователи</Link>
                 <Link to="/quizzes-admin" className={s.navLink}>Викторины</Link>
             </div>
