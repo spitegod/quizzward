@@ -154,12 +154,30 @@ app.post('/login', (req, res) => {
 
 // JWT middleware
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Нет токена' });
+  const token = req.headers['authorization']?.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+
   jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) return res.status(403).json({ message: 'Недействительный токен' });
+    if (err) return res.sendStatus(403);
     req.user = user;
+    next();
+  });
+}
+
+// Admin check middleware
+function checkAdmin(req, res, next) {
+  const userId = req.user.id;
+  
+  db.get('SELECT login FROM users WHERE id = ?', [userId], (err, user) => {
+    if (err) {
+      console.error('Ошибка при проверке прав администратора:', err);
+      return res.status(500).json({ error: 'Ошибка сервера при проверке прав доступа' });
+    }
+    
+    if (!user || user.login !== 'admin') {
+      return res.status(403).json({ error: 'Доступ запрещен. Недостаточно прав.' });
+    }
+    
     next();
   });
 }
@@ -851,7 +869,15 @@ app.post('/quizzes/:id/questions', authenticateToken, (req, res) => {
   );
 });
 
-const PORT = 4000;
+// Admin panel route
+app.get('/admin', authenticateToken, checkAdmin, (req, res) => {
+  // This route is protected and only accessible by admin
+  // The actual admin panel logic will be handled by the frontend
+  res.json({ message: 'Добро пожаловать в панель администратора' });
+});
+
+// Запуск сервера
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

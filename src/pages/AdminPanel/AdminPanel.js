@@ -1,7 +1,49 @@
-import NavAdmin from "../../components/NavAdmin/NavAdmin"
-import s from './AdminPanel.module.css'
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { getCurrentUser } from '../../services/userService';
+import NavAdmin from "../../components/NavAdmin/NavAdmin";
+import s from './AdminPanel.module.css';
 
 const AdminPanel = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAdminRights = async () => {
+      try {
+        const userData = await getCurrentUser();
+        if (userData.username !== 'admin') {
+          toast.error('Доступ запрещен. Недостаточно прав.');
+          navigate('/dashboard');
+          return;
+        }
+        setIsAdmin(true);
+      } catch (error) {
+        console.error('Ошибка при проверке прав администратора:', error);
+        toast.error('Ошибка при проверке прав доступа');
+        navigate('/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAdminRights();
+  }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <div className={s.page}>
+        <div className={s.loading}>Проверка прав доступа...</div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null; // Редирект уже произошел в useEffect
+  }
   return (
     <div className={s.page}>
       <NavAdmin />
