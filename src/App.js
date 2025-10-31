@@ -49,6 +49,10 @@ function App() {
           element={<Profile />}
         />
         <Route
+          path="/profile/:userId"
+          element={<Profile />}
+        />
+        <Route
           path="/create-quiz"
           element={<CreateQuiz />}
         />

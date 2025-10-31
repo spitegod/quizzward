@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import s from './Leaderboard.module.css';
 
 const Leaderboard = () => {
+    const navigate = useNavigate();
+    
+    const handleUserClick = (userId) => {
+        navigate(`/profile/${userId}`);
+    };
     const [leaderboardData, setLeaderboardData] = useState({
         topUsers: [],
         currentUser: null,
@@ -60,14 +66,28 @@ const Leaderboard = () => {
                     {topUsers.map((user, index) => (
                         <tr key={user.id} className={currentUser && user.id === currentUser.id ? s.you : ''}>
                             <td>{index + 1}</td>
-                            <td>{user.login}</td>
+                            <td>
+                                <span 
+                                    className={s.usernameLink}
+                                    onClick={() => handleUserClick(user.id)}
+                                >
+                                    {user.login}
+                                </span>
+                            </td>
                             <td>{user.points}</td>
                         </tr>
                     ))}
                     {currentUser && !isCurrentUserInTop && (
                         <tr className={s.you}>
                             <td>{currentUser.rank}</td>
-                            <td>Вы</td>
+                            <td>
+                                <span 
+                                    className={s.usernameLink}
+                                    onClick={() => handleUserClick(currentUser.id)}
+                                >
+                                    Вы
+                                </span>
+                            </td>
                             <td>{currentUser.points}</td>
                         </tr>
                     )}
