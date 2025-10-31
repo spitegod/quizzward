@@ -538,8 +538,21 @@ app.delete('/api/quizzes/:id', authenticateToken, (req, res) => {
 });
 
 // Добавление вопроса к викторине
+// Создаем таблицу для хранения результатов, если её нет
+db.run(`CREATE TABLE IF NOT EXISTS quiz_results (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  quiz_id INTEGER NOT NULL,
+  score INTEGER NOT NULL,
+  total_questions INTEGER NOT NULL,
+  completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+  UNIQUE(user_id, quiz_id) ON CONFLICT REPLACE
+)`);
+
 // Сохранение результатов прохождения викторины
-app.post('/api/quizzes/:id/results', authenticateToken, (req, res) => {
+app.post('/api/quizzes/:id/results', authenticateToken, async (req, res) => {
   const quizId = req.params.id;
   const userId = req.user.id;
   const { score, totalQuestions, answers } = req.body;
@@ -549,26 +562,98 @@ app.post('/api/quizzes/:id/results', authenticateToken, (req, res) => {
     return res.status(400).json({ error: 'Некорректные данные результатов' });
   }
 
-  // Обновляем очки пользователя
-  db.run(
-    'UPDATE users SET points = COALESCE(points, 0) + ? WHERE id = ?',
-    [Math.round(score), userId],
-    function(err) {
-      if (err) {
-        console.error('Ошибка при обновлении очков пользователя:', err);
-        return res.status(500).json({ error: 'Ошибка при сохранении результатов' });
-      }
-      
-      // Здесь можно сохранить детальные результаты прохождения, если нужно
-      res.json({
+  try {
+    // Проверяем, является ли пользователь автором викторины
+    const quiz = await new Promise((resolve, reject) => {
+      db.get('SELECT user_id FROM quizzes WHERE id = ?', [quizId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+
+    if (!quiz) {
+      return res.status(404).json({ error: 'Викторина не найдена' });
+    }
+
+    // Если пользователь - автор викторины, не начисляем очки
+    if (quiz.user_id === userId) {
+      return res.json({
         success: true,
-        message: 'Результаты успешно сохранены',
+        message: 'За прохождение своей викторины очки не начисляются',
         score,
         totalQuestions,
-        percentage: Math.round((score / totalQuestions) * 100)
+        percentage: Math.round((score / totalQuestions) * 100),
+        pointsAdded: 0
       });
     }
-  );
+
+    // Проверяем, проходил ли пользователь эту викторину ранее
+    const existingResult = await new Promise((resolve, reject) => {
+      db.get('SELECT score FROM quiz_results WHERE user_id = ? AND quiz_id = ?', 
+        [userId, quizId], (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+      });
+    });
+
+    // Если пользователь уже проходил викторину и новый результат не лучше, не обновляем
+    if (existingResult && existingResult.score >= score) {
+      return res.json({
+        success: true,
+        message: 'Вы уже проходили эту викторину. Новый результат не лучше предыдущего',
+        score,
+        totalQuestions,
+        percentage: Math.round((score / totalQuestions) * 100),
+        pointsAdded: 0
+      });
+    }
+
+    // Вычисляем разницу в очках для обновления (если это новый лучший результат)
+    const pointsToAdd = existingResult ? Math.max(0, score - existingResult.score) : score;
+    
+    // Обновляем очки пользователя, если есть что добавлять
+    if (pointsToAdd > 0) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          'UPDATE users SET points = COALESCE(points, 0) + ? WHERE id = ?',
+          [Math.round(pointsToAdd), userId],
+          function(err) {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+    }
+
+    // Сохраняем/обновляем результат прохождения
+    await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT OR REPLACE INTO quiz_results (user_id, quiz_id, score, total_questions) VALUES (?, ?, ?, ?)',
+        [userId, quizId, score, totalQuestions],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+
+    res.json({
+      success: true,
+      message: pointsToAdd > 0 ? 'Результаты успешно сохранены' : 'Результат сохранен, но очки не изменились',
+      score,
+      totalQuestions,
+      percentage: Math.round((score / totalQuestions) * 100),
+      pointsAdded: pointsToAdd > 0 ? Math.round(pointsToAdd) : 0,
+      isNewBest: pointsToAdd > 0
+    });
+
+  } catch (error) {
+    console.error('Ошибка при сохранении результатов:', error);
+    res.status(500).json({ 
+      error: 'Ошибка при сохранении результатов',
+      details: error.message 
+    });
+  }
 });
 
 app.post('/quizzes/:id/questions', authenticateToken, (req, res) => {
