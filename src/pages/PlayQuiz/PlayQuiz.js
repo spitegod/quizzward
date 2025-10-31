@@ -44,20 +44,28 @@ function PlayQuiz() {
   }, [id, navigate]);
 
   const handleAnswer = () => {
-    if (!answer.trim()) {
+    if (!answer || !answer.trim()) {
       toast.warning('Пожалуйста, введите ответ');
       return;
     }
 
     const newUserAnswers = [...userAnswers];
-    newUserAnswers[current] = answer.trim();
+    const trimmedAnswer = answer.trim();
+    newUserAnswers[current] = trimmedAnswer;
     setUserAnswers(newUserAnswers);
 
-    // Проверяем ответ
-    const isCorrect = answer.trim().toLowerCase() === quiz.questions[current].answer.trim().toLowerCase();
+    // Проверяем ответ с защитой от null/undefined
+    let isCorrect = false;
+    const currentQuestion = quiz?.questions?.[current];
     
-    if (isCorrect) {
-      setScore(prev => prev + 1);
+    if (currentQuestion && currentQuestion.answer) {
+      isCorrect = trimmedAnswer.toLowerCase() === currentQuestion.answer.toString().trim().toLowerCase();
+      
+      if (isCorrect) {
+        setScore(prev => prev + 1);
+      }
+    } else {
+      console.error('Ошибка: не удалось проверить ответ - вопрос или ответ отсутствует');
     }
 
     // Переходим к следующему вопросу или завершаем викторину
