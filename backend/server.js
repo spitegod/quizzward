@@ -164,6 +164,58 @@ function authenticateToken(req, res, next) {
   });
 }
 
+// Получение данных текущего пользователя (упрощенная версия для отладки)
+app.get('/api/user', authenticateToken, (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Простой запрос для проверки работы
+    db.get(
+      'SELECT id, login, email, points, created_at FROM users WHERE id = ?',
+      [userId],
+      (err, user) => {
+        if (err) {
+          console.error('Ошибка при получении данных пользователя:', err);
+          return res.status(500).json({ error: 'Ошибка при загрузке данных пользователя' });
+        }
+        
+        if (!user) {
+          return res.status(404).json({ error: 'Пользователь не найден' });
+        }
+        
+        // Форматируем дату регистрации
+        let formattedDate = 'Неизвестно';
+        try {
+          const regDate = new Date(user.created_at);
+          formattedDate = regDate.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        } catch (dateError) {
+          console.error('Ошибка при форматировании даты:', dateError);
+        }
+        
+        // Возвращаем минимальный набор данных
+        res.json({
+          id: user.id,
+          username: user.login || 'Пользователь',
+          email: user.email || '',
+          points: user.points || 0,
+          registrationDate: formattedDate,
+          completedQuizzes: 0 // Пока всегда 0 для отладки
+        });
+      }
+    );
+  } catch (error) {
+    console.error('Непредвиденная ошибка в /api/user:', error);
+    res.status(500).json({ 
+      error: 'Внутренняя ошибка сервера',
+      details: error.message 
+    });
+  }
+});
+
 // Получение таблицы лидеров
 app.get('/leaderboard', authenticateToken, (req, res) => {
   // Получаем топ-5 пользователей по очкам
