@@ -176,10 +176,34 @@ function Dashboard() {
                     <div className={s.quizInfo}>
                       <h3 className={s.quizTitle}>{quiz.title}</h3>
                       {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
-                      <p className={s.quizMeta}>
-                        Вопросов: {quiz.questions_count || 0} • 
-                        Автор: {quiz.author}
-                      </p>
+                      <div className={s.quizMetaContainer}>
+                        <p className={s.quizMeta}>
+                          Вопросов: {quiz.questions_count || 0} • 
+                          Автор: {quiz.author}
+                        </p>
+                        <div className={s.quizCategories}>
+                          {quiz.categories && quiz.categories.length > 0 ? (
+                            <>
+                              {quiz.categories.slice(0, 3).map((category, idx) => {
+                                // Handle both string and object formats for backward compatibility
+                                const categoryName = typeof category === 'string' 
+                                  ? category 
+                                  : (category.name || 'Категория');
+                                return (
+                                  <span key={idx} className={s.categoryTag}>
+                                    {categoryName}
+                                  </span>
+                                );
+                              })}
+                              {quiz.categories.length > 3 && (
+                                <span className={s.moreCategories}>+{quiz.categories.length - 3}</span>
+                              )}
+                            </>
+                          ) : (
+                            <span className={s.noCategories}>Категории не указаны</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className={s.quizActions}>
                       <button
