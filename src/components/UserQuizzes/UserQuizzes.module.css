@@ -1,0 +1,142 @@
+.quizzesSection {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  color: #2d3748;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0f4f8;
+}
+
+.quizzesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.quizCard {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.quizCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.quizLink {
+  display: block;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.quizTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+}
+
+.quizDescription {
+  color: #4a5568;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.quizMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #718096;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid #edf2f7;
+}
+
+.quizQuestions::before {
+  content: '❓';
+  margin-right: 0.5rem;
+  opacity: 0.7;
+}
+
+.quizDate {
+  font-size: 0.75rem;
+  color: #a0aec0;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: #718096;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e0;
+}
+
+.createLink {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1.25rem;
+  background-color: #4299e1;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.createLink:hover {
+  background-color: #3182ce;
+}
+
+.loading {
+  text-align: center;
+  padding: 1.5rem;
+  color: #718096;
+}
+
+.error {
+  color: #e53e3e;
+  background-color: #fff5f5;
+  padding: 1rem;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #fed7d7;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .quizzesGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .quizCard {
+    margin-bottom: 1rem;
+  }
+  
+  .sectionTitle {
+    font-size: 1.25rem;
+  }
+}

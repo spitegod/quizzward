@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Nav from "../../components/Nav/Nav";
 import ProfileStatistics from "../../components/ProfileStatistics/ProifileStatistics";
+import UserQuizzes from '../../components/UserQuizzes/UserQuizzes';
 import { getCurrentUser, getUserById } from '../../services/userService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -98,6 +99,13 @@ const Profile = () => {
                         rating={userData.points.toString()}
                         regDate={userData.registrationDate}
                         completedQuizzes={userData.completedQuizzes}
+                    />
+                </section>
+
+                <section className={s.quizzesSection}>
+                    <UserQuizzes 
+                        userId={userData.id}
+                        isCurrentUser={isCurrentUser}
                     />
                 </section>
             </main>
