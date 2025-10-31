@@ -869,6 +869,24 @@ app.post('/quizzes/:id/questions', authenticateToken, (req, res) => {
   );
 });
 
+// Get all users (admin only)
+app.get('/api/admin/users', authenticateToken, checkAdmin, (req, res) => {
+  db.all(
+    `SELECT id, login, email, points, 
+            strftime('%d.%m.%Y', created_at) as registration_date
+     FROM users 
+     ORDER BY created_at DESC`, 
+    [], 
+    (err, users) => {
+      if (err) {
+        console.error('Ошибка при получении списка пользователей:', err);
+        return res.status(500).json({ error: 'Ошибка при загрузке пользователей' });
+      }
+      res.json(users);
+    }
+  );
+});
+
 // Admin panel route
 app.get('/admin', authenticateToken, checkAdmin, (req, res) => {
   // This route is protected and only accessible by admin

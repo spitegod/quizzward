@@ -45,3 +45,25 @@ export const getUserById = async (userId) => {
     throw error;
   }
 };
+
+// Получить всех пользователей (только для администратора)
+export const getAllUsers = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Пользователь не авторизован');
+    }
+
+    const response = await axios.get(`${API_URL}/admin/users`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при получении списка пользователей:', error);
+    throw error;
+  }
+};
