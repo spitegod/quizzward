@@ -20,12 +20,55 @@
   text-align: center;
 }
 
+.quizTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .quizTitle {
   color: #07575b;
   font-size: 2rem;
   font-weight: 700;
-  margin: 0 0 0.8rem;
+  margin: 0;
   line-height: 1.3;
+  flex: 1;
+  min-width: 200px;
+}
+
+.liveLobbyButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #4a6bff, #6a5acd);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.liveLobbyButton:hover {
+  background: linear-gradient(135deg, #3a5bef, #5a4acd);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.liveLobbyButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+.liveLobbyButton .bi {
+  font-size: 1.1rem;
 }
 
 .quizDescription {

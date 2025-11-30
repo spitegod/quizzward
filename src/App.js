@@ -11,6 +11,7 @@ import AdminPanel from "./pages/AdminPanel/AdminPanel";
 import UsersAdmin from "./pages/UsersAdmin/UsersAdmin";
 import QuizzesAdmin from "./pages/QuizzesAdmin/QuizzesAdmin";
 import EditQuiz from "./pages/EditQuiz/EditQuiz";
+import LiveLobby from "./pages/LiveLobby";
 
 function App() {
   return (
@@ -62,6 +63,12 @@ function App() {
         <Route
           path="/edit-quiz/:id"
           element={<EditQuiz />} />
+        <Route
+          path="/quiz/:quizId/lobby/:lobbyId"
+          element={<LiveLobby />} />
+        <Route
+          path="/quiz/:quizId/lobby"
+          element={<LiveLobby />} />
       </Routes>
     </BrowserRouter>
   );

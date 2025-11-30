@@ -335,6 +335,12 @@ function Dashboard() {
                         Играть
                       </button>
                       <button
+                        onClick={() => navigate(`/quiz/${quiz.id}/lobby`)}
+                        className={s.buttonLive}
+                      >
+                        Live Lobby
+                      </button>
+                      <button
                         onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
                         className={s.buttonEdit}
                       >
@@ -415,6 +421,12 @@ function Dashboard() {
                         className={s.buttonPlay}
                       >
                         Играть
+                      </button>
+                      <button
+                        onClick={() => navigate(`/quiz/${quiz.id}/lobby`)}
+                        className={s.buttonLive}
+                      >
+                        Live Lobby
                       </button>
                     </div>
                   </div>

@@ -90,7 +90,29 @@ function CreateQuiz({ isEdit = false }) {
                 setCategories([]);
             }
             
-            setQuestions(quiz.questions || []);
+            // Преобразуем вопросы из формата БД в формат формы
+            const formattedQuestions = (quiz.questions || []).map(q => {
+                let answer = '';
+
+                // Если есть options, берем правильный ответ из массива
+                if (q.options) {
+                    try {
+                        const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+                        if (Array.isArray(options) && options[q.correct_answer] !== undefined) {
+                            answer = String(options[q.correct_answer]);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse options:', q.options);
+                    }
+                }
+
+                return {
+                    question: q.question_text || q.question || '',
+                    answer: answer
+                };
+            });
+
+            setQuestions(formattedQuestions.length > 0 ? formattedQuestions : [{ question: "", answer: "" }]);
         } catch (error) {
             console.error('Ошибка при загрузке викторины:', error);
             toast.error('Не удалось загрузить викторину');
@@ -122,7 +144,7 @@ function CreateQuiz({ isEdit = false }) {
             return;
         }
 
-        if (questions.some(q => !q.question.trim() || !q.answer.trim())) {
+        if (questions.some(q => !q.question || !q.question.trim() || !q.answer || !q.answer.trim())) {
             toast.error('Заполните все поля вопросов и ответов');
             return;
         }
@@ -280,7 +302,7 @@ function CreateQuiz({ isEdit = false }) {
                             <input
                                 type="text"
                                 placeholder="Вопрос"
-                                value={q.question}
+                                value={q.question || ''}
                                 onChange={(e) => handleQuestionChange(i, "question", e.target.value)}
                                 className={s.inputQuestion}
                                 disabled={isLoading}
@@ -288,7 +310,7 @@ function CreateQuiz({ isEdit = false }) {
                             <input
                                 type="text"
                                 placeholder="Ответ"
-                                value={q.answer}
+                                value={q.answer || ''}
                                 onChange={(e) => handleQuestionChange(i, "answer", e.target.value)}
                                 className={s.inputAnswer}
                                 disabled={isLoading}

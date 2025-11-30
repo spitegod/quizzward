@@ -229,7 +229,16 @@ function PlayQuiz() {
       <Nav />
       <div className={s.playQuizContainer}>
         <div className={s.quizHeader}>
-          <h1 className={s.quizTitle}>{quiz.title}</h1>
+          <div className={s.quizTitleRow}>
+            <h1 className={s.quizTitle}>{quiz.title}</h1>
+            <button 
+              onClick={() => navigate(`/quiz/${quiz.id}/lobby`)}
+              className={s.liveLobbyButton}
+              title="Создать лобби для мультиплеерной игры"
+            >
+              <span className="bi bi-people-fill"></span> Создать лобби
+            </button>
+          </div>
           {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
           <div className={s.quizProgress}>
             <div 

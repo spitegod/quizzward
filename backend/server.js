@@ -1,38 +1,36 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
+const { setupWebSocket } = require('./websocket/server');
 
 const app = express();
+const server = http.createServer(app);
 const dbPath = path.resolve(__dirname, 'users.db');
 const db = new sqlite3.Database(dbPath);
 const SECRET_KEY = process.env.SECRET_KEY || 'default_secret';
 
-// Настройка CORS
-const corsOptions = {
-  origin: 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
+// Initialize WebSocket server
+const io = setupWebSocket(server);
 
-// Применяем CORS ко всем маршрутам
-app.use(cors(corsOptions));
-
-// Разрешаем pre-flight запросы для всех маршрутов
+// CORS middleware
 app.use((req, res, next) => {
+  // Set CORS headers
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', true);
     return res.status(200).end();
   }
+
   next();
 });
 
@@ -932,16 +930,10 @@ app.get('/api/quizzes/:id', authenticateToken, (req, res) => {
             console.error('Ошибка при получении вопросов:', err);
             return res.status(500).json({ error: 'Ошибка сервера' });
           }
-          
-          // Форматируем вопросы для фронтенда
-          const formattedQuestions = questions.map(q => ({
-            question: q.question_text,
-            answer: JSON.parse(q.options)[q.correct_answer] // Получаем правильный ответ
-          }));
-          
+
           res.json({
             ...quiz,
-            questions: formattedQuestions
+            questions: questions
           });
         }
       );
@@ -998,12 +990,16 @@ app.put('/api/quizzes/:id', authenticateToken, (req, res) => {
               );
 
               questions.forEach(q => {
+                const options = Array.isArray(q.options) ? q.options : (q.answer ? [q.answer] : ['']);
+                const correctAnswer = q.correctAnswer !== undefined ? q.correctAnswer : 0;
+                const points = q.points || 1;
+
                 stmt.run(
                   quizId,
-                  q.question,
-                  JSON.stringify([q.answer]),
-                  0, // Индекс правильного ответа
-                  1  // Баллы за вопрос
+                  q.question || 'Без названия',
+                  JSON.stringify(options),
+                  correctAnswer,
+                  points
                 );
               });
 
@@ -1266,6 +1262,7 @@ app.get('/admin', authenticateToken, checkAdmin, (req, res) => {
 
 // Запуск сервера
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket server running on port ${PORT}`);
 });
