@@ -423,12 +423,16 @@ class WebSocketService {
         return;
       }
 
+      const payloadAnswer = typeof answer === 'number'
+        ? answer
+        : (typeof answer === 'string' ? answer.trim() : answer);
+
       this.socket.emit(
         'submitAnswer',
         { 
           lobbyId, 
           questionId,
-          answer: typeof answer === 'string' ? answer.trim() : answer
+          answer: payloadAnswer
         },
         (response) => {
           if (response && response.success) {

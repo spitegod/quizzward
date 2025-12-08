@@ -1,203 +1,125 @@
-/* Основной контейнер */
 .page {
-  background-color: #66a5ad;
   min-height: 100vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 40px;
+  padding-bottom: 80px;
+  color: var(--text-primary);
 }
 
-/* Контейнер контента */
 .content {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 1280px;
+  width: min(1280px, 100% - 48px);
   margin: 0 auto;
-  padding: 20px;
+  padding: 32px 0 80px;
 }
 
-/* Заголовок страницы */
 .h2 {
-  margin: 0 0 24px;
-  font-size: 2rem;
-  line-height: 1.2;
-  color: #07575b;
-  font-weight: 800;
+  margin: 16px 0 28px;
+  font-size: clamp(2rem, 3vw, 3rem);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
-/* Карточка с таблицей */
 .card {
-  background: #fff;
-  border: 1px solid #cdecec;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(7, 87, 91, 0.1);
-  padding: 20px;
-  overflow: hidden;
+  border-radius: 36px;
+  padding: 32px;
+  background: rgba(6, 9, 30, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 45px 120px rgba(0, 0, 0, 0.55);
 }
 
-/* Обертка для скролла таблицы */
 .tableWrap {
   overflow-x: auto;
-  border-radius: 8px;
-  margin: -4px;
+  border-radius: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Таблица */
 .table {
   width: 100%;
   border-collapse: collapse;
   min-width: 900px;
-  font-size: 14px;
 }
 
-/* Заголовки таблицы */
 .table th {
-  background: #07575b;
-  color: #fff;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 14px 16px;
+  padding: 18px 22px;
   text-align: left;
-  font-size: 13px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-/* Строки таблицы */
-.table tbody tr {
-  transition: background-color 0.2s ease;
-}
-
-.table tbody tr:nth-child(odd) {
-  background: #ffffff;
-}
-
-.table tbody tr:nth-child(even) {
-  background: #f8fbfb;
+.table td {
+  padding: 18px 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .table tbody tr:hover {
-  background: #e6f2f2;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-/* Ячейки таблицы */
-.table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid #e0f0f0;
-  color: #054a49;
-  font-weight: 500;
-  vertical-align: middle;
-}
-
-/* Колонка с номером */
 .colIndex {
-  width: 50px;
+  width: 60px;
   text-align: center;
-  color: #5a8a8a;
-  font-weight: 600;
+  color: var(--text-muted);
 }
 
-/* Статусы пользователей */
+.activeStatus,
+.bannedStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 16px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
 .activeStatus {
-  display: inline-block;
-  padding: 4px 10px;
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  background: rgba(24, 216, 255, 0.15);
+  color: #18d8ff;
 }
 
 .bannedStatus {
-  display: inline-block;
-  padding: 4px 10px;
-  background-color: #ffebee;
-  color: #c62828;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
+  background: rgba(255, 138, 166, 0.15);
+  color: #ff8aa6;
 }
 
-/* Строка с заблокированным пользователем */
 .bannedUser {
   opacity: 0.7;
-  background-color: #fff9f9 !important;
 }
 
-.bannedUser:hover {
-  background-color: #ffebee !important;
-}
-
-/* Контейнер с действиями */
 .actions {
   display: flex;
-  gap: 8px;
-  justify-content: flex-start;
+  gap: 10px;
 }
 
-/* Кнопка редактирования */
 .editButton {
-  background: #07575b;
-  color: white;
   border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 16px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.editButton:hover:not(:disabled) {
-  background: #054a49;
-  transform: translateY(-1px);
 }
 
 .editButton:disabled {
-  background: #b2d3d3;
+  opacity: 0.3;
   cursor: not-allowed;
-  opacity: 0.7;
 }
 
-/* Состояние загрузки */
 .loading {
-  padding: 30px;
+  padding: 32px;
   text-align: center;
-  color: #07575b;
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--text-muted);
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
   .content {
-    padding: 15px 10px;
+    width: calc(100% - 32px);
   }
-  
-  .h2 {
-    font-size: 1.5rem;
-    margin-bottom: 20px;
-  }
-  
+
   .card {
-    border-radius: 10px;
-    padding: 15px 10px;
-  }
-  
-  .table th,
-  .table td {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
-  
-  .editButton {
-    padding: 5px 10px;
-    font-size: 12px;
+    padding: 24px 18px;
   }
 }

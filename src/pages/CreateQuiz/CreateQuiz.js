@@ -15,7 +15,12 @@ function CreateQuiz({ isEdit = false }) {
     const [categories, setCategories] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-    const [questions, setQuestions] = useState([{ question: "", answer: "" }]);
+    const createEmptyQuestion = () => ({
+        question: "",
+        options: ["", "", "", ""],
+        correctAnswer: 0
+    });
+    const [questions, setQuestions] = useState([createEmptyQuestion()]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingCategories, setIsLoadingCategories] = useState(true);
     const categoryRef = useRef(null);
@@ -92,27 +97,32 @@ function CreateQuiz({ isEdit = false }) {
             
             // Преобразуем вопросы из формата БД в формат формы
             const formattedQuestions = (quiz.questions || []).map(q => {
-                let answer = '';
+                let options = [];
+                try {
+                    options = q.options ? (typeof q.options === 'string' ? JSON.parse(q.options) : q.options) : [];
+                } catch (e) {
+                    console.error('Failed to parse options:', q.options, e);
+                    options = [];
+                }
 
-                // Если есть options, берем правильный ответ из массива
-                if (q.options) {
-                    try {
-                        const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-                        if (Array.isArray(options) && options[q.correct_answer] !== undefined) {
-                            answer = String(options[q.correct_answer]);
-                        }
-                    } catch (e) {
-                        console.error('Failed to parse options:', q.options);
-                    }
+                if (!Array.isArray(options) || options.length === 0) {
+                    options = [q.answer || '', '', '', ''];
+                }
+
+                if (options.length < 4) {
+                    options = [...options, ...Array(4 - options.length).fill('')];
+                } else if (options.length > 4) {
+                    options = options.slice(0, 4);
                 }
 
                 return {
                     question: q.question_text || q.question || '',
-                    answer: answer
+                    options,
+                    correctAnswer: typeof q.correct_answer === 'number' ? q.correct_answer : 0
                 };
             });
 
-            setQuestions(formattedQuestions.length > 0 ? formattedQuestions : [{ question: "", answer: "" }]);
+            setQuestions(formattedQuestions.length > 0 ? formattedQuestions : [createEmptyQuestion()]);
         } catch (error) {
             console.error('Ошибка при загрузке викторины:', error);
             toast.error('Не удалось загрузить викторину');
@@ -122,7 +132,7 @@ function CreateQuiz({ isEdit = false }) {
     };
 
     const addQuestion = () => {
-        setQuestions([...questions, { question: "", answer: "" }]);
+        setQuestions([...questions, createEmptyQuestion()]);
     };
 
     const removeQuestion = (index) => {
@@ -138,14 +148,28 @@ function CreateQuiz({ isEdit = false }) {
         setQuestions(newQuestions);
     };
 
+    const handleOptionChange = (questionIndex, optionIndex, value) => {
+        setQuestions(prev => prev.map((question, idx) => {
+            if (idx !== questionIndex) return question;
+            const updatedOptions = question.options.map((opt, optIdx) => optIdx === optionIndex ? value : opt);
+            return { ...question, options: updatedOptions };
+        }));
+    };
+
+    const handleCorrectAnswerChange = (questionIndex, optionIndex) => {
+        setQuestions(prev => prev.map((question, idx) => (
+            idx === questionIndex ? { ...question, correctAnswer: optionIndex } : question
+        )));
+    };
+
     const saveQuiz = async () => {
         if (!quizName.trim()) {
             toast.error('Введите название викторины');
             return;
         }
 
-        if (questions.some(q => !q.question || !q.question.trim() || !q.answer || !q.answer.trim())) {
-            toast.error('Заполните все поля вопросов и ответов');
+        if (questions.some(q => !q.question || !q.question.trim() || q.options.some(opt => !opt || !opt.trim()))) {
+            toast.error('Заполните вопрос и все варианты ответов');
             return;
         }
 
@@ -163,7 +187,8 @@ function CreateQuiz({ isEdit = false }) {
                 categories: categories,
                 questions: questions.map(q => ({
                     question: q.question.trim(),
-                    answer: q.answer.trim()
+                    options: q.options.map(opt => opt.trim()),
+                    correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : 0
                 }))
             };
 
@@ -175,7 +200,7 @@ function CreateQuiz({ isEdit = false }) {
                 toast.success('Викторина успешно создана');
                 setQuizName('');
                 setDescription('');
-                setQuestions([{ question: "", answer: "" }]);
+                setQuestions([createEmptyQuestion()]);
             }
             
             navigate('/dashboard');
@@ -307,14 +332,31 @@ function CreateQuiz({ isEdit = false }) {
                                 className={s.inputQuestion}
                                 disabled={isLoading}
                             />
-                            <input
-                                type="text"
-                                placeholder="Ответ"
-                                value={q.answer || ''}
-                                onChange={(e) => handleQuestionChange(i, "answer", e.target.value)}
-                                className={s.inputAnswer}
-                                disabled={isLoading}
-                            />
+                            <div className={s.optionsGrid}>
+                                {q.options.map((option, idx) => (
+                                    <div key={idx} className={`${s.optionRow} ${q.correctAnswer === idx ? s.optionRowActive : ''}`}>
+                                        <span className={s.optionIndex}>{String.fromCharCode(65 + idx)}</span>
+                                        <input
+                                            type="text"
+                                            placeholder={`Вариант ${idx + 1}`}
+                                            value={option}
+                                            onChange={(e) => handleOptionChange(i, idx, e.target.value)}
+                                            disabled={isLoading}
+                                            className={s.optionInput}
+                                        />
+                                        <label className={s.correctToggle}>
+                                            <input
+                                                type="radio"
+                                                name={`correct-${i}`}
+                                                checked={q.correctAnswer === idx}
+                                                onChange={() => handleCorrectAnswerChange(i, idx)}
+                                                disabled={isLoading}
+                                            />
+                                            <span>Правильный</span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ))}
                     <button 

@@ -12,8 +12,7 @@ const QUESTION_COUNT_OPTIONS = [
   { value: '0', label: 'Любое количество' },
   { value: '5', label: 'До 5 вопросов' },
   { value: '10', label: 'До 10 вопросов' },
-  { value: '15', label: 'До 15 вопросов' },
-  { value: '20', label: 'Более 20 вопросов' }
+  { value: '15', label: 'От 15 вопросов' }
 ];
 
 function Dashboard() {
@@ -27,7 +26,9 @@ function Dashboard() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [questionCountFilter, setQuestionCountFilter] = useState('0');
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isQuestionDropdownOpen, setIsQuestionDropdownOpen] = useState(false);
   const categoryRef = useRef(null);
+  const questionRef = useRef(null);
   const [availableCategories, setAvailableCategories] = useState([]);
 
   const token = localStorage.getItem('token');
@@ -119,6 +120,9 @@ function Dashboard() {
       if (categoryRef.current && !categoryRef.current.contains(event.target)) {
         setIsCategoryDropdownOpen(false);
       }
+      if (questionRef.current && !questionRef.current.contains(event.target)) {
+        setIsQuestionDropdownOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -176,7 +180,6 @@ function Dashboard() {
             />
             
             <div className={s.filterGroup}>
-              <label>Категории:</label>
               <div className={s.categorySelect} ref={categoryRef}>
                 <div 
                   className={`${s.selectedCategories} ${isCategoryDropdownOpen ? s.active : ''}`}
@@ -222,18 +225,33 @@ function Dashboard() {
             </div>
             
             <div className={s.filterGroup}>
-              <label>Количество вопросов:</label>
-              <select
-                value={questionCountFilter}
-                onChange={(e) => setQuestionCountFilter(e.target.value)}
-                className={s.selectInput}
-              >
-                {QUESTION_COUNT_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className={s.categorySelect} ref={questionRef}>
+                <div 
+                  className={`${s.selectedCategories} ${isQuestionDropdownOpen ? s.active : ''}`}
+                  onClick={() => setIsQuestionDropdownOpen(!isQuestionDropdownOpen)}
+                >
+                  <span className={s.placeholder}>
+                    {QUESTION_COUNT_OPTIONS.find(opt => opt.value === questionCountFilter)?.label}
+                  </span>
+                  <span className={s.arrow}>▼</span>
+                </div>
+                {isQuestionDropdownOpen && (
+                  <div className={s.categoryDropdown}>
+                    {QUESTION_COUNT_OPTIONS.map(option => (
+                      <div
+                        key={option.value}
+                        className={`${s.questionOption} ${questionCountFilter === option.value ? s.selectedOption : ''}`}
+                        onClick={() => {
+                          setQuestionCountFilter(option.value);
+                          setIsQuestionDropdownOpen(false);
+                        }}
+                      >
+                        {option.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             
             {(searchTerm || selectedCategories.length > 0 || questionCountFilter !== '0') && (
@@ -248,6 +266,12 @@ function Dashboard() {
           </div>
           
           <div className={s.buttonsContainer}>
+            <button
+              onClick={() => navigate("/create-quiz")}
+              className={`${s.buttonCreate} ${s.primaryAction}`}
+            >
+              Создать викторину
+            </button>
             {isAdmin && (
               <button
                 onClick={() => navigate("/users-admin")}
@@ -256,12 +280,6 @@ function Dashboard() {
                 Панель администратора
               </button>
             )}
-            <button
-              onClick={() => navigate("/create-quiz")}
-              className={s.buttonCreate}
-            >
-              Создать викторину
-            </button>
           </div>
         </div>
 

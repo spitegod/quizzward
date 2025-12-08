@@ -12,7 +12,7 @@ function PlayQuiz() {
   const [quiz, setQuiz] = useState(null);
   const [current, setCurrent] = useState(0);
   const [score, setScore] = useState(0);
-  const [answer, setAnswer] = useState("");
+  const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userAnswers, setUserAnswers] = useState([]);
@@ -29,8 +29,42 @@ function PlayQuiz() {
         }
         
         const quizData = await getQuizById(id, token);
-        setQuiz(quizData);
-        setUserAnswers(Array(quizData.questions.length).fill(''));
+        const normalizedQuestions = (quizData.questions || []).map((q, index) => {
+          let parsedOptions = [];
+          try {
+            parsedOptions = q.options ? JSON.parse(q.options) : [];
+          } catch (err) {
+            parsedOptions = [];
+          }
+
+          let options = Array.isArray(parsedOptions) && parsedOptions.length > 0
+            ? parsedOptions.slice(0, 4)
+            : [q.answer ?? '', '', '', ''];
+
+          if (options.length < 4) {
+            options = [...options, ...Array(4 - options.length).fill('')];
+          }
+
+          const fallbackAnswer = q.answer ?? q.correct_answer ?? '';
+          const correctAnswerIndexRaw = typeof q.correct_answer === 'number' ? q.correct_answer : 0;
+          const correctAnswerIndex = Math.min(Math.max(correctAnswerIndexRaw, 0), options.length - 1);
+          const optionAnswer = options[correctAnswerIndex] ?? fallbackAnswer;
+
+          return {
+            ...q,
+            questionText: q.question_text || q.question || `Вопрос ${index + 1}`,
+            options,
+            correctAnswer: correctAnswerIndex,
+            correctText: (optionAnswer ?? fallbackAnswer ?? '').toString()
+          };
+        });
+
+        setQuiz({ ...quizData, questions: normalizedQuestions });
+        setUserAnswers(Array(normalizedQuestions.length).fill(null));
+        setSelectedOption(null);
+        setCurrent(0);
+        setScore(0);
+        setShowResults(false);
       } catch (err) {
         console.error('Ошибка при загрузке викторины:', err);
         setError('Не удалось загрузить викторину. Пожалуйста, попробуйте позже.');
@@ -44,34 +78,32 @@ function PlayQuiz() {
   }, [id, navigate]);
 
   const handleAnswer = () => {
-    if (!answer || !answer.trim()) {
-      toast.warning('Пожалуйста, введите ответ');
+    if (selectedOption === null) {
+      toast.warning('Выберите вариант ответа');
       return;
     }
 
     const newUserAnswers = [...userAnswers];
-    const trimmedAnswer = answer.trim();
-    newUserAnswers[current] = trimmedAnswer;
+    newUserAnswers[current] = selectedOption;
     setUserAnswers(newUserAnswers);
 
-    // Проверяем ответ с защитой от null/undefined
-    let isCorrect = false;
     const currentQuestion = quiz?.questions?.[current];
-    
-    if (currentQuestion && currentQuestion.answer) {
-      isCorrect = trimmedAnswer.toLowerCase() === currentQuestion.answer.toString().trim().toLowerCase();
-      
-      if (isCorrect) {
-        setScore(prev => prev + 1);
-      }
-    } else {
-      console.error('Ошибка: не удалось проверить ответ - вопрос или ответ отсутствует');
+    const correctIndex = typeof currentQuestion?.correctAnswer === 'number'
+      ? currentQuestion.correctAnswer
+      : (currentQuestion?.options || []).findIndex(opt =>
+          opt && currentQuestion.correctText &&
+          opt.toString().trim().toLowerCase() === currentQuestion.correctText.trim().toLowerCase()
+        );
+    const isCorrect = selectedOption === correctIndex;
+
+    if (isCorrect) {
+      setScore(prev => prev + 1);
     }
 
-    // Переходим к следующему вопросу или завершаем викторину
     if (current + 1 < quiz.questions.length) {
-      setCurrent(prev => prev + 1);
-      setAnswer(userAnswers[current + 1] || '');
+      const nextIndex = current + 1;
+      setCurrent(nextIndex);
+      setSelectedOption(newUserAnswers[nextIndex] ?? null);
     } else {
       finishQuiz(isCorrect);
     }
@@ -79,53 +111,60 @@ function PlayQuiz() {
 
   const finishQuiz = async (isLastAnswerCorrect) => {
     const finalScore = score + (isLastAnswerCorrect ? 1 : 0);
-    const percentage = Math.round((finalScore / quiz.questions.length) * 100);
-    
+
     try {
       const token = localStorage.getItem('token');
       if (token) {
         await submitQuizResults(id, {
           score: finalScore,
           totalQuestions: quiz.questions.length,
-          answers: userAnswers.map((answer, index) => ({
-            questionId: quiz.questions[index].id,
-            userAnswer: answer,
-            isCorrect: answer.toLowerCase() === quiz.questions[index].answer.trim().toLowerCase()
-          }))
+          answers: userAnswers.map((userAnswer = '', index) => {
+            const cleanAnswer = userAnswer.toString().trim().toLowerCase();
+            const correctAnswer = (quiz.questions[index].correctText || '').trim().toLowerCase();
+
+            return {
+              questionId: quiz.questions[index].id,
+              userAnswer,
+              isCorrect: cleanAnswer === correctAnswer
+            };
+          })
         }, token);
       }
-      
-      setShowResults(true);
     } catch (err) {
       console.error('Ошибка при сохранении результатов:', err);
       toast.error('Не удалось сохранить результаты');
+    } finally {
+      setScore(finalScore);
+      setShowResults(true);
     }
   };
 
   const handleNext = () => {
     if (current + 1 < quiz.questions.length) {
-      setCurrent(prev => prev + 1);
-      setAnswer(userAnswers[current + 1] || '');
+      const nextIndex = current + 1;
+      setCurrent(nextIndex);
+      setSelectedOption(userAnswers[nextIndex] ?? null);
     }
   };
 
   const handlePrev = () => {
     if (current > 0) {
-      setCurrent(prev => prev - 1);
-      setAnswer(userAnswers[current - 1] || '');
+      const prevIndex = current - 1;
+      setCurrent(prevIndex);
+      setSelectedOption(userAnswers[prevIndex] ?? null);
     }
   };
 
   const handleQuestionClick = (index) => {
     setCurrent(index);
-    setAnswer(userAnswers[index] || '');
+    setSelectedOption(userAnswers[index] ?? null);
   };
 
   const restartQuiz = () => {
     setCurrent(0);
     setScore(0);
-    setAnswer('');
-    setUserAnswers(Array(quiz.questions.length).fill(''));
+    setSelectedOption(null);
+    setUserAnswers(Array(quiz.questions.length).fill(null));
     setShowResults(false);
   };
 
@@ -197,21 +236,25 @@ function PlayQuiz() {
             <h3>Проверьте свои ответы:</h3>
             <div className={s.answersList}>
               {quiz.questions.map((q, index) => {
-                const isCorrect = userAnswers[index]?.toLowerCase() === q.answer.trim().toLowerCase();
+                const questionText = q.questionText;
+                const correctAnswer = (q.correctText || '').trim();
+                const userIndex = userAnswers[index];
+                const userAnswer = typeof userIndex === 'number' ? (q.options[userIndex] || '').toString().trim() : '';
+                const isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase();
                 return (
                   <div 
                     key={index} 
                     className={`${s.answerItem} ${isCorrect ? s.correct : s.incorrect}`}
                   >
                     <div className={s.answerQuestion}>
-                      <strong>Вопрос {index + 1}:</strong> {q.question}
+                      <strong>Вопрос {index + 1}:</strong> {questionText}
                     </div>
                     <div className={s.answerUser}>
-                      <strong>Ваш ответ:</strong> {userAnswers[index] || 'Нет ответа'}
+                      <strong>Ваш ответ:</strong> {userAnswer || 'Нет ответа'}
                     </div>
                     {!isCorrect && (
                       <div className={s.answerCorrect}>
-                        <strong>Правильный ответ:</strong> {q.answer}
+                        <strong>Правильный ответ:</strong> {correctAnswer || 'Нет ответа'}
                       </div>
                     )}
                   </div>
@@ -231,13 +274,6 @@ function PlayQuiz() {
         <div className={s.quizHeader}>
           <div className={s.quizTitleRow}>
             <h1 className={s.quizTitle}>{quiz.title}</h1>
-            <button 
-              onClick={() => navigate(`/quiz/${quiz.id}/lobby`)}
-              className={s.liveLobbyButton}
-              title="Создать лобби для мультиплеерной игры"
-            >
-              <span className="bi bi-people-fill"></span> Создать лобби
-            </button>
           </div>
           {quiz.description && <p className={s.quizDescription}>{quiz.description}</p>}
           <div className={s.quizProgress}>
@@ -256,23 +292,27 @@ function PlayQuiz() {
         <div className={s.quizContent}>
           <div className={s.questionBlock}>
             <div className={s.questionText}>
-              {quiz.questions[current].question}
+              {quiz.questions[current].questionText}
             </div>
             
+            <div className={s.optionsGrid}>
+              {quiz.questions[current].options.map((option, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedOption(idx)}
+                  className={`${s.optionButton} ${selectedOption === idx ? s.optionSelected : ''}`}
+                >
+                  <span className={s.optionLabel}>{String.fromCharCode(65 + idx)}</span>
+                  <span className={s.optionText}>{option}</span>
+                </button>
+              ))}
+            </div>
+
             <div className={s.answerInputContainer}>
-              <input
-                type="text"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAnswer()}
-                placeholder="Введите ваш ответ..."
-                className={s.inputAnswer}
-                autoFocus
-              />
               <button 
                 onClick={handleAnswer} 
                 className={s.buttonAnswer}
-                disabled={!answer.trim()}
+                disabled={selectedOption === null}
               >
                 {current === quiz.questions.length - 1 ? 'Завершить' : 'Ответить'}
               </button>

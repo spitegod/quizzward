@@ -38,6 +38,7 @@ function Login() {
                     <Link to="/register" className={s.authLink}>Регистрация</Link>
                 </div>
                 <div className={s.companyName}>Quizzward</div>
+                <p className={s.hint}>Врывайся в живые баттлы и докажи, что ты главный по знаниям.</p>
                 <form className={s.loginInputs} onSubmit={handleLogin}>
                     <input name="login" type="text" className={s.inputLogin} placeholder="Логин" value={form.login} onChange={handleChange} required />
                     <input name="password" type="password" className={`${s.input} ${s.inputPassword}`} placeholder="Пароль" value={form.password} onChange={handleChange} required />

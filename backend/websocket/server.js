@@ -122,7 +122,20 @@ class LobbyManager {
       return { error: 'No questions provided' };
     }
 
-    lobby.questions = questions;
+    lobby.questions = questions.map((q, index) => {
+      const options = Array.isArray(q.options) ? q.options : [];
+      const baseIndex = typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0;
+      const correctedIndex = Math.min(Math.max(baseIndex, 0), options.length > 0 ? options.length - 1 : 0);
+      const answerText = (options[correctedIndex] ?? q.correctAnswer ?? '').toString();
+
+      return {
+        ...q,
+        questionText: q.questionText || q.question || `Вопрос ${index + 1}`,
+        options,
+        correctAnswerIndex: correctedIndex,
+        correctAnswer: answerText
+      };
+    });
     lobby.currentQuestionIndex = -1;
     lobby.gameState = 'starting';
 
@@ -197,7 +210,26 @@ class LobbyManager {
       return { error: 'Already answered correctly' };
     }
 
-    const isCorrect = answer.trim().toLowerCase() === lobby.currentQuestion.correctAnswer.toLowerCase();
+    let answerIndex = typeof answer === 'number' ? answer : parseInt(answer, 10);
+    if (Number.isNaN(answerIndex)) {
+      answerIndex = null;
+    }
+
+    const correctIndex = typeof lobby.currentQuestion.correctAnswerIndex === 'number'
+      ? lobby.currentQuestion.correctAnswerIndex
+      : null;
+
+    const correctAnswerText = (lobby.currentQuestion.correctAnswer || '').toString();
+    let answerText = '';
+    if (answerIndex !== null && Array.isArray(lobby.currentQuestion.options)) {
+      answerText = (lobby.currentQuestion.options[answerIndex] || '').toString();
+    } else {
+      answerText = typeof answer === 'string' ? answer : '';
+    }
+
+    const isCorrect = correctIndex !== null && answerIndex !== null
+      ? answerIndex === correctIndex
+      : answerText.trim().toLowerCase() === correctAnswerText.trim().toLowerCase();
 
     // Увеличиваем счётчик попыток только если ответ неверный
     if (!isCorrect) {
@@ -205,7 +237,8 @@ class LobbyManager {
     }
 
     const answerData = {
-      answer,
+      answer: answerText,
+      answerIndex,
       isCorrect,
       responseTime,
       timestamp: Date.now(),

@@ -51,48 +51,35 @@ const Leaderboard = () => {
 
     if (error) return <div className={s.error}>{error}</div>;
 
+    const renderRow = (user, indexLabel, highlight) => (
+        <div key={`${user.id}-${indexLabel}`} className={`${s.row} ${highlight ? s.you : ''}`}>
+            <span className={s.colRank}>{indexLabel}</span>
+            <span 
+                className={s.colUser}
+                onClick={() => handleUserClick(user.id)}
+            >
+                {highlight && !isCurrentUserInTop ? 'Вы' : user.login}
+            </span>
+            <span className={s.colPoints}>{user.points}</span>
+        </div>
+    );
+
     return (
-        <div>
+        <div className={s.card}>
             <h3 className={s.title}>Таблица лидеров</h3>
-            <table className={s.table}>
-                <thead>
-                    <tr>
-                        <th>№</th>
-                        <th>Пользователь</th>
-                        <th>Очки</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {topUsers.map((user, index) => (
-                        <tr key={user.id} className={currentUser && user.id === currentUser.id ? s.you : ''}>
-                            <td>{index + 1}</td>
-                            <td>
-                                <span 
-                                    className={s.usernameLink}
-                                    onClick={() => handleUserClick(user.id)}
-                                >
-                                    {user.login}
-                                </span>
-                            </td>
-                            <td>{user.points}</td>
-                        </tr>
-                    ))}
-                    {currentUser && !isCurrentUserInTop && (
-                        <tr className={s.you}>
-                            <td>{currentUser.rank}</td>
-                            <td>
-                                <span 
-                                    className={s.usernameLink}
-                                    onClick={() => handleUserClick(currentUser.id)}
-                                >
-                                    Вы
-                                </span>
-                            </td>
-                            <td>{currentUser.points}</td>
-                        </tr>
+            <div className={s.tableWrap}>
+                <div className={`${s.row} ${s.head}`}>
+                    <span className={s.colRank}>№</span>
+                    <span className={s.colUser}>Пользователь</span>
+                    <span className={s.colPoints}>Очки</span>
+                </div>
+                <div className={s.body}>
+                    {topUsers.map((user, index) => 
+                        renderRow(user, index + 1, currentUser && user.id === currentUser.id)
                     )}
-                </tbody>
-            </table>
+                    {currentUser && !isCurrentUserInTop && renderRow(currentUser, currentUser.rank, true)}
+                </div>
+            </div>
         </div>
     );
 };

@@ -41,6 +41,7 @@ function Register() {
                     <Link to="/register" className={`${s.authLink} ${s.active}`}>Регистрация</Link>
                 </div>
                 <div className={s.companyName}>Quizzward</div>
+                <p className={s.hint}>Создай аккаунт и получи доступ к живым квизам и рейтингам.</p>
                 <form className={s.loginInputs} onSubmit={handleRegister}>
                     <input name="email" type="email" className={s.inputLogin} placeholder="Email" value={form.email} onChange={handleChange} required />
                     <input name="login" type="text" className={s.inputLogin} placeholder="Логин" value={form.login} onChange={handleChange} required />

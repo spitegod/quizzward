@@ -1,13 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-primary: #070918;
+  --bg-secondary: #0c1029;
+  --accent: #6a7dff;
+  --accent-2: #18d8ff;
+  --text-primary: #f6f8ff;
+  --text-muted: #9aa5c2;
+  --card: rgba(9, 13, 37, 0.85);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --blur: blur(24px);
+  --radius-xl: 28px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  min-height: 100vh;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: radial-gradient(circle at 5% 10%, rgba(106, 125, 255, 0.25), transparent 45%),
+              radial-gradient(circle at 80% 0%, rgba(24, 216, 255, 0.2), transparent 35%),
+              linear-gradient(140deg, var(--bg-primary), var(--bg-secondary));
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::before {
+  background: radial-gradient(circle at 20% 20%, rgba(154, 109, 255, 0.25), transparent 45%),
+              radial-gradient(circle at 80% 30%, rgba(24, 216, 255, 0.18), transparent 40%);
+  filter: var(--blur);
+}
+
+body::after {
+  background: radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.04), transparent 50%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'Space Grotesk', 'Fira Code', 'Source Code Pro', Menlo, Monaco, Consolas, 'Courier New', monospace;
 }

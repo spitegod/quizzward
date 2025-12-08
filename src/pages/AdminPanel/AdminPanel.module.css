@@ -1,118 +1,101 @@
-/* Фон и контейнер */
 .page {
-  background-color: #66a5ad;
   min-height: 100vh;
-  width: 100%;
+  color: var(--text-primary);
+  padding-bottom: 80px;
+}
+
+.content {
+  width: min(1200px, 100% - 48px);
+  margin: 0 auto;
+  padding: 32px 0 80px;
   display: flex;
   flex-direction: column;
+  gap: 32px;
 }
 
-/* Основной контент */
-.content {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 28px 48px;
-}
-
-/* Заголовки */
 .h2 {
-  margin: 0;
-  font-size: 2.2rem;
-  line-height: 1.2;
-  color: #07575b;
-  font-weight: 800;
+  margin: 16px 0 0;
+  font-size: clamp(2rem, 2.8vw, 3rem);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .sub {
-  margin: 6px 0 28px;
-  color: #054a49;
-  font-weight: 500;
-}
-
-/* Карточка с таблицей */
-.card {
-  background: #fff;
-  border-radius: 20px;
-  border: 1px solid #cdecec;
-  box-shadow: 0 3px 10px rgba(7, 87, 91, 0.15);
-  padding: 20px 24px;
-}
-
-/* Заголовок таблицы */
-.h3 {
-  margin: 0 0 14px;
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #07575b;
+  margin: 8px 0 16px;
+  color: var(--text-muted);
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  letter-spacing: .4px;
+  font-size: 0.85rem;
 }
 
-/* Обёртка таблицы */
+.card {
+  border-radius: 32px;
+  padding: 32px;
+  background: rgba(6, 9, 30, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55);
+}
+
+.h3 {
+  margin: 0 0 18px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .tableWrap {
   overflow-x: auto;
-  border-radius: 12px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Таблица */
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 540px;
+  min-width: 520px;
 }
 
-/* Шапка */
 .table thead th {
-  background: #def2f1;
-  color: #054a49;
-  font-weight: 700;
   text-align: left;
-  padding: 12px 14px;
-  border-bottom: 2px solid #cdecec;
+  padding: 18px 20px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-/* Строки */
-.table tbody tr:nth-child(odd) {
-  background-color: #ffffff;
-}
-.table tbody tr:nth-child(even) {
-  background-color: #f7fbfb;
+.table td {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .table tbody tr:hover {
-  background-color: #def2f1;
-  transition: background-color .2s ease;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-/* Ячейки */
-.table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid #cdecec;
-  color: #054a49;
-  font-weight: 600;
-}
-
-/* Колонка № */
 .colIndex {
   width: 60px;
   text-align: center;
-  color: #07575b;
+  color: var(--text-muted);
 }
 
-/* Числа моноширинно */
 .mono {
   font-variant-numeric: tabular-nums;
 }
 
-/* Адаптив */
-@media (max-width: 700px) {
-  .content { padding: 24px 18px 36px; }
-  .h2 { font-size: 1.8rem; }
-  .h3 { font-size: 1.1rem; }
-  .card { padding: 16px 18px; }
+.loading {
+  width: min(400px, calc(100% - 32px));
+  margin: 80px auto;
+  text-align: center;
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 24px 20px;
+  }
 }

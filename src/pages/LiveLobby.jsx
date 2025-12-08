@@ -7,8 +7,41 @@ import { getCurrentUser } from '../services/userService';
 import './LiveLobby.css';
 import { FaCopy, FaUser, FaUsers, FaPlay, FaSignOutAlt, FaUserCircle, FaClock, FaTrophy } from 'react-icons/fa';
 
+const normalizeQuestions = (rawQuestions = []) => {
+  return rawQuestions.map((q, index) => {
+    let options = [];
+    try {
+      options = q.options ? (typeof q.options === 'string' ? JSON.parse(q.options) : q.options) : [];
+    } catch (e) {
+      console.error('Failed to parse options for live lobby:', q.options, e);
+      options = [];
+    }
+
+    if (!Array.isArray(options) || options.length === 0) {
+      options = [q.answer ?? '', '', '', ''];
+    }
+
+    if (options.length < 4) {
+      options = [...options, ...Array(4 - options.length).fill('')];
+    } else if (options.length > 4) {
+      options = options.slice(0, 4);
+    }
+
+    const baseIndex = typeof q.correct_answer === 'number' ? q.correct_answer : 0;
+    const correctAnswerIndex = Math.min(Math.max(baseIndex, 0), options.length - 1);
+
+    return {
+      ...q,
+      questionText: q.question_text || q.question || `Вопрос ${index + 1}`,
+      options,
+      correctAnswerIndex,
+      correctAnswerText: (options[correctAnswerIndex] ?? q.answer ?? '').toString()
+    };
+  });
+};
+
 const LiveLobby = () => {
-  const { quizId, lobbyId } = useParams();
+  const { quizId, lobbyId: lobbyIdParam } = useParams();
   const navigate = useNavigate();
   const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +56,7 @@ const LiveLobby = () => {
   const [questionNumber, setQuestionNumber] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [answer, setAnswer] = useState('');
+  const [selectedOption, setSelectedOption] = useState(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answerResult, setAnswerResult] = useState(null);
   const [myScore, setMyScore] = useState(0);
@@ -97,7 +130,8 @@ const LiveLobby = () => {
           }
         });
 
-        setQuiz(response.data);
+        const normalizedQuestions = normalizeQuestions(response.data.questions || []);
+        setQuiz({ ...response.data, questions: normalizedQuestions });
         setLoading(false);
       } catch (err) {
         console.error('Error loading quiz:', err);
@@ -175,11 +209,19 @@ const LiveLobby = () => {
   const handleQuestion = useCallback((data) => {
     console.log('Question received:', data);
     setGameState('playing');
-    setCurrentQuestion(data.question);
+    const normalizedQuestion = {
+      ...data.question,
+      options: data.question?.options || [],
+      correctAnswerIndex: typeof data.question?.correctAnswerIndex === 'number'
+        ? data.question.correctAnswerIndex
+        : 0,
+      correctAnswerText: data.question?.correctAnswer || ''
+    };
+    setCurrentQuestion(normalizedQuestion);
     setQuestionNumber(data.questionNumber);
     setTotalQuestions(data.totalQuestions);
     setTimeLeft(data.timeLimit ? Math.floor(data.timeLimit / 1000) : 30);
-    setAnswer('');
+    setSelectedOption(null);
     setHasAnswered(false);
     setAnswerResult(null);
     setCountdown(null);
@@ -198,7 +240,7 @@ const LiveLobby = () => {
       setIsBlocked(true);
       toast.success(`Правильно! +${data.points} ${data.points === 1 ? 'балл' : data.points === 0.5 ? 'балла' : 'баллов'}`);
     } else {
-      setAnswer('');
+      setSelectedOption(null);
       if (data.attemptsLeft === 0) {
         setIsBlocked(true);
         toast.error('Попытки закончились!');
@@ -262,23 +304,18 @@ const LiveLobby = () => {
     }
 
     try {
-      const questions = quiz.questions.map(q => {
-        let options = q.options;
-        if (typeof options === 'string') {
-          try {
-            options = JSON.parse(options);
-          } catch (e) {
-            console.error('Failed to parse options:', options);
-            options = [];
-          }
-        }
+      const questions = (quiz.questions || []).map((q, index) => {
+        const options = Array.isArray(q.options) ? q.options : [];
+        const baseIndex = typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0;
+        const correctAnswerIndex = Math.min(Math.max(baseIndex, 0), options.length ? options.length - 1 : 0);
+        const correctAnswerText = (options[correctAnswerIndex] ?? q.correctAnswerText ?? '').toString();
 
         return {
-          id: q.id,
-          questionText: q.question_text,
-          correctAnswer: Array.isArray(options) && options[q.correct_answer]
-            ? String(options[q.correct_answer])
-            : String(q.correct_answer)
+          id: q.id || `question-${index}`,
+          questionText: q.questionText || q.question || `Вопрос ${index + 1}`,
+          options,
+          correctAnswerIndex,
+          correctAnswer: correctAnswerText
         };
       });
 
@@ -289,13 +326,17 @@ const LiveLobby = () => {
     }
   };
 
-  const handleSubmitAnswer = async (e) => {
-    if (e) e.preventDefault();
+  const handleSubmitAnswer = async () => {
+    if (selectedOption === null || isBlocked) return;
 
-    if (!answer.trim() || isBlocked) return;
+    const lobbyIdToUse = currentLobby?.id || lobbyIdParam;
+    if (!lobbyIdToUse) {
+      toast.error('Лобби не найдено');
+      return;
+    }
 
     try {
-      await WebSocketService.submitAnswer(currentLobby.id, currentQuestion.id, answer);
+      await WebSocketService.submitAnswer(lobbyIdToUse, currentQuestion?.id || '', selectedOption);
     } catch (error) {
       console.error('Ошибка при отправке ответа:', error);
 
@@ -304,7 +345,7 @@ const LiveLobby = () => {
         setAttemptsLeft(0);
         toast.error('Попытки закончились!');
       } else {
-        toast.error('Не удалось отправить ответ');
+        toast.error(error.message || 'Не удалось отправить ответ');
       }
     }
   };
@@ -553,24 +594,30 @@ const LiveLobby = () => {
             <h2>{currentQuestion?.questionText}</h2>
           </div>
 
-          <form onSubmit={handleSubmitAnswer} className="answer-form">
-            <input
-              type="text"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder={isBlocked ? "Попытки закончились" : "Введите ваш ответ..."}
-              className="answer-input"
-              disabled={isBlocked}
-              autoFocus
-            />
+          <div className="answer-options">
+            {currentQuestion?.options?.map((option, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className={`option-button ${selectedOption === idx ? 'selected' : ''}`}
+                onClick={() => !isBlocked && setSelectedOption(idx)}
+                disabled={isBlocked}
+              >
+                <span className="option-label">{String.fromCharCode(65 + idx)}</span>
+                <span className="option-text">{option}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="answer-controls">
             <button
-              type="submit"
-              className="btn-primary"
-              disabled={!answer.trim() || isBlocked}
+              onClick={handleSubmitAnswer}
+              className="answer-button"
+              disabled={selectedOption === null || isBlocked}
             >
-              {isBlocked ? (hasAnswered ? 'Ответ отправлен' : 'Заблокировано') : 'Отправить'}
+              {isBlocked ? (hasAnswered ? 'Ответ принят' : 'Заблокировано') : 'Ответить'}
             </button>
-          </form>
+          </div>
 
           <div className="attempts-info">
             {!isBlocked && <p>Осталось попыток: {attemptsLeft}/3</p>}

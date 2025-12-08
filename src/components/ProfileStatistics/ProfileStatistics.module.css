@@ -1,37 +1,27 @@
 .statsWrapper {
-    background: linear-gradient(145deg, #def2f1 0%, #cdecec 100%);
-    border-radius: 20px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 12px rgba(7, 87, 91, 0.15);
     width: 100%;
-    max-width: 500px;
-    margin: 1.5rem auto;
-    text-align: center;
+    border-radius: 28px;
+    padding: 32px;
+    background: rgba(6, 9, 30, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
 }
 
 .statsTitle {
-    color: #07575b;
-    font-weight: 700;
-    margin-bottom: 1rem;
+    margin: 0 0 18px;
+    letter-spacing: 0.3em;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    color: var(--text-muted);
 }
 
 .statsTable {
     width: 100%;
     border-collapse: collapse;
-    background: #fff;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(7, 87, 91, 0.1);
 }
 
 .statsTable td {
-    padding: 0.8rem 1rem;
-    text-align: left;
-    font-size: 1rem;
-    border-bottom: 1px solid #cdecec;
-    color: #054a49;
+    padding: 14px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .statsTable tr:last-child td {
@@ -39,10 +29,5 @@
 }
 
 .statsTable tr:nth-child(even) {
-    background-color: #def2f1;
-}
-
-.statsTable tr:hover {
-    background-color: #cdecec;
-    transition: background-color 0.25s ease;
+    background: rgba(255, 255, 255, 0.02);
 }
