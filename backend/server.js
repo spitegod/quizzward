@@ -1070,8 +1070,10 @@ app.post('/api/quizzes/:id/results', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { score, totalQuestions, answers } = req.body;
 
-  // Валидация
-  if (typeof score !== 'number' || typeof totalQuestions !== 'number' || !Array.isArray(answers)) {
+  // Валидация и нормализация чисел
+  const numericScore = Number(score);
+  const numericTotal = Number(totalQuestions);
+  if (!Number.isFinite(numericScore) || !Number.isFinite(numericTotal) || !Array.isArray(answers)) {
     return res.status(400).json({ error: 'Некорректные данные результатов' });
   }
 
@@ -1093,9 +1095,9 @@ app.post('/api/quizzes/:id/results', authenticateToken, async (req, res) => {
       return res.json({
         success: true,
         message: 'За прохождение своей викторины очки не начисляются',
-        score,
-        totalQuestions,
-        percentage: Math.round((score / totalQuestions) * 100),
+        score: numericScore,
+        totalQuestions: numericTotal,
+        percentage: Math.round((numericScore / numericTotal) * 100),
         pointsAdded: 0
       });
     }
@@ -1109,20 +1111,8 @@ app.post('/api/quizzes/:id/results', authenticateToken, async (req, res) => {
       });
     });
 
-    // Если пользователь уже проходил викторину и новый результат не лучше, не обновляем
-    if (existingResult && existingResult.score >= score) {
-      return res.json({
-        success: true,
-        message: 'Вы уже проходили эту викторину. Новый результат не лучше предыдущего',
-        score,
-        totalQuestions,
-        percentage: Math.round((score / totalQuestions) * 100),
-        pointsAdded: 0
-      });
-    }
-
     // Вычисляем разницу в очках для обновления (если это новый лучший результат)
-    const pointsToAdd = existingResult ? Math.max(0, score - existingResult.score) : score;
+    const pointsToAdd = existingResult ? Math.max(0, numericScore - existingResult.score) : numericScore;
     
     // Обновляем очки пользователя, если есть что добавлять
     if (pointsToAdd > 0) {
@@ -1138,11 +1128,11 @@ app.post('/api/quizzes/:id/results', authenticateToken, async (req, res) => {
       });
     }
 
-    // Сохраняем/обновляем результат прохождения
+    // Сохраняем/обновляем результат прохождения (храним лучший результат)
     await new Promise((resolve, reject) => {
       db.run(
         'INSERT OR REPLACE INTO quiz_results (user_id, quiz_id, score, total_questions) VALUES (?, ?, ?, ?)',
-        [userId, quizId, score, totalQuestions],
+        [userId, quizId, Math.max(existingResult ? existingResult.score : 0, numericScore), numericTotal],
         function(err) {
           if (err) reject(err);
           else resolve();
@@ -1153,9 +1143,9 @@ app.post('/api/quizzes/:id/results', authenticateToken, async (req, res) => {
     res.json({
       success: true,
       message: pointsToAdd > 0 ? 'Результаты успешно сохранены' : 'Результат сохранен, но очки не изменились',
-      score,
-      totalQuestions,
-      percentage: Math.round((score / totalQuestions) * 100),
+      score: numericScore,
+      totalQuestions: numericTotal,
+      percentage: Math.round((numericScore / numericTotal) * 100),
       pointsAdded: pointsToAdd > 0 ? Math.round(pointsToAdd) : 0,
       isNewBest: pointsToAdd > 0
     });

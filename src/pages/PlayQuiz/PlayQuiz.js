@@ -118,13 +118,14 @@ function PlayQuiz() {
         await submitQuizResults(id, {
           score: finalScore,
           totalQuestions: quiz.questions.length,
-          answers: userAnswers.map((userAnswer = '', index) => {
-            const cleanAnswer = userAnswer.toString().trim().toLowerCase();
+          answers: userAnswers.map((userAnswer, index) => {
+            const safeAnswer = userAnswer == null ? '' : userAnswer;
+            const cleanAnswer = safeAnswer.toString().trim().toLowerCase();
             const correctAnswer = (quiz.questions[index].correctText || '').trim().toLowerCase();
 
             return {
               questionId: quiz.questions[index].id,
-              userAnswer,
+              userAnswer: safeAnswer,
               isCorrect: cleanAnswer === correctAnswer
             };
           })

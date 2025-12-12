@@ -342,6 +342,14 @@
     display: inline-block;
 }
 
+.submitError {
+    width: 100%;
+    margin-top: 10px;
+    color: #ff8aa6;
+    text-align: right;
+    letter-spacing: 0.05em;
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }

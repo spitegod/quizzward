@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import WebSocketService from '../services/WebSocketService';
 import { getCurrentUser } from '../services/userService';
+import { submitQuizResults } from '../services/quizService';
 import './LiveLobby.css';
 import { FaCopy, FaUser, FaUsers, FaPlay, FaSignOutAlt, FaUserCircle, FaClock, FaTrophy, FaDownload, FaChartBar } from 'react-icons/fa';
 
@@ -282,6 +283,24 @@ const LiveLobby = () => {
       setLiveStats(data.stats);
     }
     toast.success('Игра завершена!');
+
+    // Сохраняем результат в глобальный лидерборд (если есть токен)
+    const token = localStorage.getItem('token');
+    const totalQ = totalQuestions || (quiz?.questions?.length ?? 0);
+    const leaderboardScore = data?.leaderboard?.find(p => p.id === WebSocketService.socket?.id)?.score;
+    const numericScore = Number.isFinite(Number(leaderboardScore)) ? Number(leaderboardScore) : Number(myScore);
+    const finalScore = Number.isFinite(numericScore) ? numericScore : 0;
+
+    if (token && quizId && totalQ > 0) {
+      submitQuizResults(quizId, {
+        score: finalScore,
+        totalQuestions: totalQ,
+        answers: Array.from({ length: totalQ }).map(() => ({ questionId: '', userAnswer: '', isCorrect: false }))
+      }, token).catch((err) => {
+        console.error('Не удалось отправить результаты викторины:', err);
+        toast.error('Не удалось сохранить результат в рейтинг');
+      });
+    }
   }, []);
 
   const handleLobbyClosed = useCallback(() => {

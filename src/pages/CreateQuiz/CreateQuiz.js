@@ -15,6 +15,7 @@ function CreateQuiz({ isEdit = false }) {
     const [categories, setCategories] = useState([]);
     const [availableCategories, setAvailableCategories] = useState([]);
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+    const [submitError, setSubmitError] = useState('');
     const createEmptyQuestion = () => ({
         question: "",
         options: ["", "", "", ""],
@@ -163,23 +164,34 @@ function CreateQuiz({ isEdit = false }) {
     };
 
     const saveQuiz = async () => {
+        setSubmitError('');
         if (!quizName.trim()) {
             toast.error('Введите название викторины');
+            setSubmitError('Введите название викторины');
             return;
         }
 
         if (questions.some(q => !q.question || !q.question.trim() || q.options.some(opt => !opt || !opt.trim()))) {
             toast.error('Заполните вопрос и все варианты ответов');
+            setSubmitError('Заполните вопрос и все варианты ответов');
+            return;
+        }
+
+        if (categories.length === 0) {
+            toast.error('Выберите хотя бы одну категорию');
+            setSubmitError('Выберите хотя бы одну категорию');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            toast.error('Сессия истекла. Войдите заново.');
+            navigate('/login');
             return;
         }
 
         try {
             setIsLoading(true);
-            const token = localStorage.getItem('token');
-            if (categories.length === 0) {
-                toast.error('Выберите хотя бы одну категорию');
-                return;
-            }
 
             const quizData = {
                 title: quizName,
@@ -206,7 +218,12 @@ function CreateQuiz({ isEdit = false }) {
             navigate('/dashboard');
         } catch (error) {
             console.error('Ошибка при сохранении викторины:', error);
-            toast.error('Не удалось сохранить викторину');
+            const msg = error?.response?.data?.error 
+              || error?.response?.data?.message 
+              || error?.message 
+              || 'Не удалось сохранить викторину';
+            toast.error(msg);
+            setSubmitError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -392,6 +409,7 @@ function CreateQuiz({ isEdit = false }) {
                             'Создать викторину'
                         )}
                     </button>
+                    {submitError && <div className={s.submitError}>{submitError}</div>}
                 </div>
             </div>
         </div>
