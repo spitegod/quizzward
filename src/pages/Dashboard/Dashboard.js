@@ -30,6 +30,8 @@ function Dashboard() {
   const categoryRef = useRef(null);
   const questionRef = useRef(null);
   const [availableCategories, setAvailableCategories] = useState([]);
+  const [liveQuizId, setLiveQuizId] = useState(null);
+  const [liveJoinCode, setLiveJoinCode] = useState('');
 
   const token = localStorage.getItem('token');
 
@@ -145,6 +147,33 @@ function Dashboard() {
     setQuestionCountFilter('0');
   };
 
+  useEffect(() => {
+    const firstMyQuiz = filteredQuizzes.myQuizzes?.[0];
+    if (firstMyQuiz && (!liveQuizId || !filteredQuizzes.myQuizzes.find(q => q.id === liveQuizId))) {
+      setLiveQuizId(firstMyQuiz.id);
+    }
+  }, [filteredQuizzes.myQuizzes, liveQuizId]);
+
+  const handleStartLive = () => {
+    if (!liveQuizId) {
+      toast.error('Выберите викторину для Live Lobby');
+      return;
+    }
+    navigate(`/quiz/${liveQuizId}/lobby`);
+  };
+
+  const handleJoinLive = () => {
+    if (!liveJoinCode.trim()) {
+      toast.error('Введите код лобби');
+      return;
+    }
+    if (!liveQuizId) {
+      toast.error('Выберите викторину');
+      return;
+    }
+    navigate(`/quiz/${liveQuizId}/lobby?code=${liveJoinCode.trim().toUpperCase()}`);
+  };
+
   const handleDeleteQuiz = async (id, e) => {
     e.stopPropagation();
     if (window.confirm('Вы уверены, что хотите удалить эту викторину?')) {
@@ -168,6 +197,44 @@ function Dashboard() {
       <Nav />
       <div className={s.dashboardContent}>
         <h2 className={s.dashboardMainText}>Главная страница</h2>
+
+        <div className={s.liveCard}>
+          <div className={s.liveCardRow}>
+            <div className={s.liveInputGroup}>
+              <label className={s.liveLabel}>Викторина для лобби</label>
+              <div className={s.liveSelectWrapper}>
+                <select
+                  className={s.liveSelect}
+                  value={liveQuizId || ''}
+                  onChange={(e) => setLiveQuizId(e.target.value)}
+                >
+                  {filteredQuizzes.myQuizzes.map(q => (
+                    <option key={q.id} value={q.id}>{q.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className={s.liveInputGroup}>
+              <label className={s.liveLabel}>Код лобби</label>
+              <input
+                type="text"
+                className={s.liveInput}
+                value={liveJoinCode}
+                onChange={(e) => setLiveJoinCode(e.target.value.toUpperCase())}
+                placeholder="Например: ABC123"
+                maxLength={6}
+              />
+            </div>
+          </div>
+          <div className={s.liveActions}>
+            <button className={s.buttonLive} onClick={handleStartLive} disabled={!liveQuizId}>
+              Создать свое лобби
+            </button>
+            <button className={s.buttonPlay} onClick={handleJoinLive} disabled={!liveQuizId}>
+              Присоединиться по коду
+            </button>
+          </div>
+        </div>
 
         <div className={s.toolbar}>
           <div className={s.searchContainer}>

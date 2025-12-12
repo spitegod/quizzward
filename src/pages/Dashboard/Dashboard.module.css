@@ -13,6 +13,7 @@
   grid-template-columns: minmax(0, 1fr) 420px;
   grid-template-areas:
     "title sidebar"
+    "live sidebar"
     "toolbar sidebar"
     "content sidebar";
   column-gap: 32px;
@@ -25,6 +26,80 @@
   font-size: clamp(2rem, 2.6vw, 2.8rem);
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.liveCard {
+  grid-area: live;
+  background: linear-gradient(145deg, rgba(8, 12, 32, 0.92), rgba(12, 17, 40, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 22px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.liveCardRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.liveInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.liveLabel {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-left: 4px;
+}
+
+.liveSelect,
+.liveInput {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.liveActions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.liveSelect {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 38px;
+  position: relative;
+  background: linear-gradient(135deg, rgba(19, 21, 38, 0.95), rgba(16, 18, 32, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liveSelectWrapper {
+  position: relative;
+}
+
+.liveSelectWrapper::after {
+  content: "▾";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.65);
+  pointer-events: none;
+  font-size: 0.9rem;
 }
 
 .toolbar {
@@ -439,6 +514,7 @@
     grid-template-columns: 1fr;
     grid-template-areas:
       "title"
+      "live"
       "toolbar"
       "content"
       "sidebar";
@@ -455,7 +531,7 @@
 
 @media (max-width: 960px) {
   .dashboardContent {
-    width: min(1100px, 100% - 28px);
+    width: min(1100px, 100% - 24px);
     row-gap: 20px;
   }
 
