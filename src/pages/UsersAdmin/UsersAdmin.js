@@ -174,49 +174,91 @@ const UsersAdmin = () => {
               {searchTerm ? 'Пользователи не найдены. Попробуйте изменить параметры поиска.' : 'Нет пользователей'}
             </div>
           ) : (
-            <div className={s.tableContainer}>
-              <table className={s.userTable}>
-                <thead>
-                  <tr>
-                    <th>№</th>
-                    <th>Логин</th>
-                    <th>Email</th>
-                    <th>Очки</th>
-                    <th>Статус</th>
-                    <th>Дата регистрации</th>
-                    <th>Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user, index) => (
-                    <tr key={user.id} className={user.is_banned ? s.bannedUser : ''}>
-                      <td className={s.colIndex}>{index + 1}</td>
-                      <td>{user.login}</td>
-                      <td>{user.email || 'Не указан'}</td>
-                      <td>{user.points || 0}</td>
-                      <td>
-                        <span className={user.is_banned ? s.bannedStatus : s.activeStatus}>
-                          {user.is_banned ? 'Заблокирован' : 'Активен'}
-                        </span>
-                      </td>
-                      <td>{user.registration_date || 'Неизвестно'}</td>
-                      <td>
-                        <div className={s.actions}>
-                          <button
-                            className={s.editButton}
-                            onClick={() => handleEditUser(user)}
-                            disabled={user.login === 'admin'}
-                            title={user.login === 'admin' ? 'Редактирование администратора запрещено' : 'Редактировать пользователя'}
-                          >
-                            Редактировать
-                          </button>
-                        </div>
-                      </td>
+            <>
+              <div className={s.tableContainer}>
+                <table className={s.userTable}>
+                  <thead>
+                    <tr>
+                      <th>№</th>
+                      <th>Логин</th>
+                      <th>Email</th>
+                      <th>Очки</th>
+                      <th>Статус</th>
+                      <th>Дата регистрации</th>
+                      <th>Действия</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((user, index) => (
+                      <tr key={user.id} className={user.is_banned ? s.bannedUser : ''}>
+                        <td className={s.colIndex}>{index + 1}</td>
+                        <td>{user.login}</td>
+                        <td>{user.email || 'Не указан'}</td>
+                        <td>{user.points || 0}</td>
+                        <td>
+                          <span className={user.is_banned ? s.bannedStatus : s.activeStatus}>
+                            {user.is_banned ? 'Заблокирован' : 'Активен'}
+                          </span>
+                        </td>
+                        <td>{user.registration_date || 'Неизвестно'}</td>
+                        <td>
+                          <div className={s.actions}>
+                            <button
+                              className={s.editButton}
+                              onClick={() => handleEditUser(user)}
+                              disabled={user.login === 'admin'}
+                              title={user.login === 'admin' ? 'Редактирование администратора запрещено' : 'Редактировать пользователя'}
+                            >
+                              Редактировать
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className={s.mobileCards}>
+                {filteredUsers.map((user, index) => (
+                  <div key={user.id} className={`${s.mobileCard} ${user.is_banned ? s.bannedUser : ''}`}>
+                    <div className={s.mobileRow}>
+                      <span className={s.mobileLabel}>№</span>
+                      <span className={s.mobileValue}>{index + 1}</span>
+                    </div>
+                    <div className={s.mobileRow}>
+                      <span className={s.mobileLabel}>Логин</span>
+                      <span className={s.mobileValue}>{user.login}</span>
+                    </div>
+                    <div className={s.mobileRow}>
+                      <span className={s.mobileLabel}>Email</span>
+                      <span className={s.mobileValue}>{user.email || 'Не указан'}</span>
+                    </div>
+                    <div className={s.mobileRow}>
+                      <span className={s.mobileLabel}>Очки</span>
+                      <span className={s.mobileValue}>{user.points || 0}</span>
+                    </div>
+                    <div className={s.mobileRow}>
+                      <span className={s.mobileLabel}>Статус</span>
+                      <span className={user.is_banned ? s.bannedStatus : s.activeStatus}>
+                        {user.is_banned ? 'Заблокирован' : 'Активен'}
+                      </span>
+                    </div>
+                    <div className={s.mobileRow}>
+                      <span className={s.mobileLabel}>Дата</span>
+                      <span className={s.mobileValue}>{user.registration_date || 'Неизвестно'}</span>
+                    </div>
+                    <button
+                      className={s.mobileEdit}
+                      onClick={() => handleEditUser(user)}
+                      disabled={user.login === 'admin'}
+                    >
+                      Редактировать
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

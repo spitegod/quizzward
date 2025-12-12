@@ -400,6 +400,66 @@
   margin: 0 0 8px;
 }
 
+@media (max-width: 900px) {
+  .playQuizContainer {
+    padding: 32px 20px;
+    gap: 20px;
+  }
+
+  .quizTitleRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .optionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .questionBlock {
+    padding: 22px;
+  }
+
+  .navigation {
+    flex-direction: column;
+  }
+
+  .navButton {
+    width: 100%;
+  }
+
+  .progressText {
+    position: static;
+    margin-top: 8px;
+    text-align: right;
+  }
+}
+
+@media (max-width: 600px) {
+  .playQuizPage {
+    padding: 24px 12px 64px;
+  }
+
+  .buttonAnswer {
+    width: 100%;
+  }
+
+  .quizHeader {
+    text-align: left;
+  }
+
+  .questionBlock {
+    padding: 18px;
+  }
+
+  .answerItem {
+    padding: 14px;
+  }
+
+  .resultsContainer {
+    width: 100%;
+  }
+}
+
 .answerUser,
 .answerCorrect {
   margin: 0;

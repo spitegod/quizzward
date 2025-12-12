@@ -11,7 +11,9 @@ function NavAdmin() {
                 <Link to="/users-admin" className={s.navLink}>Пользователи</Link>
                 <Link to="/quizzes-admin" className={s.navLink}>Викторины</Link>
             </div>
-            <Link to="/login" className={s.navLink}>Выход</Link>
+            <div className={s.navRight}>
+                <Link to="/dashboard" className={s.navCta}>Главное меню</Link>
+            </div>
         </nav>
     )
 }

@@ -61,7 +61,7 @@
 
 .searchInput {
   flex: 1;
-  min-width: 320px;
+  min-width: 240px;
   padding: 20px 28px;
   border-radius: 36px;
   border: 1px solid rgba(255, 255, 255, 0.05);
@@ -449,14 +449,71 @@
   }
 }
 
-@media (max-width: 640px) {
-  .searchContainer,
-  .selectedCategories,
-  .selectInput,
-  .searchInput {
+.primaryAction {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 960px) {
+  .dashboardContent {
+    width: min(1100px, 100% - 28px);
+    row-gap: 20px;
+  }
+
+  .searchContainer {
+    padding: 22px 22px;
+    gap: 16px;
+  }
+
+  .filterGroup {
     width: 100%;
   }
 }
-.primaryAction {
-  font-size: 1.1rem;
+
+@media (max-width: 768px) {
+  .dashboardMainText {
+    text-align: left;
+  }
+
+  .searchContainer {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 28px;
+  }
+
+  .filterGroup {
+    flex-direction: column;
+  }
+
+  .quizGrid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .buttonCreate,
+  .primaryAction {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+@media (max-width: 620px) {
+  .dashboardContent {
+    width: min(100%, 100% - 16px);
+  }
+
+  .searchInput {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .selectedCategories {
+    width: 100%;
+  }
+
+  .categoryDropdown {
+    position: relative;
+  }
+
+  .toolbar {
+    gap: 14px;
+  }
 }

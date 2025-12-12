@@ -156,6 +156,69 @@
   color: #ff8aa6;
 }
 
+.mobileCards {
+  display: none;
+}
+
+.mobileCard {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 9, 30, 0.86);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.mobileRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.mobileLabel {
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.mobileValue {
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+}
+
+.mobileActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.mobileEdit,
+.mobileDelete {
+  flex: 1;
+  border: none;
+  border-radius: 14px;
+  padding: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mobileEdit {
+  background: linear-gradient(120deg, #ff7ee9, #6a7dff);
+  color: #050914;
+}
+
+.mobileDelete {
+  background: rgba(255, 138, 166, 0.15);
+  color: #ff8aa6;
+}
+
 @media (max-width: 768px) {
   .content {
     width: calc(100% - 32px);
@@ -163,5 +226,25 @@
 
   .actionsContainer {
     flex-direction: column;
+  }
+
+  .searchContainer {
+    width: 100%;
+  }
+
+  .quizzesTable {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .table {
+    display: none;
+  }
+
+  .mobileCards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 }

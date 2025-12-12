@@ -111,59 +111,106 @@ const QuizzesAdmin = () => {
             {searchTerm ? 'Ничего не найдено. Попробуйте изменить параметры поиска.' : 'Нет доступных викторин'}
           </div>
         ) : (
-          <div className={s.quizzesTable}>
-            <table className={s.table}>
-              <thead>
-                <tr>
-                  <th className={s.colIndex}>№</th>
-                  <th>Название</th>
-                  <th>Описание</th>
-                  <th>Автор</th>
-                  <th>Вопросов</th>
-                  <th>Дата создания</th>
-                  <th>Действия</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredQuizzes.map((quiz, index) => (
-                  <tr key={quiz.id} className={s.quizRow}>
-                    <td className={s.colIndex}>{index + 1}</td>
-                    <td className={s.quizTitle} title={quiz.title}>
-                      {quiz.title}
-                    </td>
-                    <td className={s.quizDescription} title={quiz.description}>
-                      {quiz.description || '—'}
-                    </td>
-                    <td className={s.quizAuthor}>
-                      {quiz.author || 'Неизвестно'}
-                    </td>
-                    <td className={s.questionsCount}>
-                      {quiz.questions_count || 0}
-                    </td>
-                    <td className={s.quizDate}>
-                      {formatDate(quiz.created_at)}
-                    </td>
-                    <td className={s.actions}>
-                      <div className={s.actionsContainer}>
-                        <button
-                          onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
-                          className={s.editButton}
-                        >
-                          Редактировать
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteQuiz(quiz.id, e)}
-                          className={s.deleteButton}
-                        >
-                          Удалить
-                        </button>
-                      </div>
-                    </td>
+          <>
+            <div className={s.quizzesTable}>
+              <table className={s.table}>
+                <thead>
+                  <tr>
+                    <th className={s.colIndex}>№</th>
+                    <th>Название</th>
+                    <th>Описание</th>
+                    <th>Автор</th>
+                    <th>Вопросов</th>
+                    <th>Дата создания</th>
+                    <th>Действия</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredQuizzes.map((quiz, index) => (
+                    <tr key={quiz.id} className={s.quizRow}>
+                      <td className={s.colIndex}>{index + 1}</td>
+                      <td className={s.quizTitle} title={quiz.title}>
+                        {quiz.title}
+                      </td>
+                      <td className={s.quizDescription} title={quiz.description}>
+                        {quiz.description || '—'}
+                      </td>
+                      <td className={s.quizAuthor}>
+                        {quiz.author || 'Неизвестно'}
+                      </td>
+                      <td className={s.questionsCount}>
+                        {quiz.questions_count || 0}
+                      </td>
+                      <td className={s.quizDate}>
+                        {formatDate(quiz.created_at)}
+                      </td>
+                      <td className={s.actions}>
+                        <div className={s.actionsContainer}>
+                          <button
+                            onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
+                            className={s.editButton}
+                          >
+                            Редактировать
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteQuiz(quiz.id, e)}
+                            className={s.deleteButton}
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className={s.mobileCards}>
+              {filteredQuizzes.map((quiz, index) => (
+                <div key={quiz.id} className={s.mobileCard}>
+                  <div className={s.mobileRow}>
+                    <span className={s.mobileLabel}>№</span>
+                    <span className={s.mobileValue}>{index + 1}</span>
+                  </div>
+                  <div className={s.mobileRow}>
+                    <span className={s.mobileLabel}>Название</span>
+                    <span className={s.mobileValue}>{quiz.title}</span>
+                  </div>
+                  <div className={s.mobileRow}>
+                    <span className={s.mobileLabel}>Описание</span>
+                    <span className={s.mobileValue}>{quiz.description || '—'}</span>
+                  </div>
+                  <div className={s.mobileRow}>
+                    <span className={s.mobileLabel}>Автор</span>
+                    <span className={s.mobileValue}>{quiz.author || 'Неизвестно'}</span>
+                  </div>
+                  <div className={s.mobileRow}>
+                    <span className={s.mobileLabel}>Вопросов</span>
+                    <span className={s.mobileValue}>{quiz.questions_count || 0}</span>
+                  </div>
+                  <div className={s.mobileRow}>
+                    <span className={s.mobileLabel}>Создано</span>
+                    <span className={s.mobileValue}>{formatDate(quiz.created_at)}</span>
+                  </div>
+                  <div className={s.mobileActions}>
+                    <button
+                      onClick={() => navigate(`/edit-quiz/${quiz.id}`)}
+                      className={s.mobileEdit}
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteQuiz(quiz.id, e)}
+                      className={s.mobileDelete}
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

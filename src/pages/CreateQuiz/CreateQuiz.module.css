@@ -356,3 +356,44 @@
         align-items: stretch;
     }
 }
+
+@media (max-width: 920px) {
+    .quizContent {
+        width: min(960px, 100% - 16px);
+    }
+
+    .questionHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .questionBlock {
+        padding: 18px;
+    }
+}
+
+@media (max-width: 620px) {
+    .quizContainer {
+        padding: 24px 12px 60px;
+    }
+
+    .optionRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .optionInput {
+        width: 100%;
+    }
+
+    .actions {
+        gap: 12px;
+    }
+
+    .buttonPrimary,
+    .buttonSecondary {
+        width: 100%;
+        text-align: center;
+    }
+}

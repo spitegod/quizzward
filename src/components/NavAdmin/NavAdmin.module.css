@@ -1,38 +1,79 @@
 .navigation {
-    margin: 24px auto;
-    width: min(1200px, calc(100% - 48px));
-    padding: 18px 26px;
-    border-radius: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(8, 14, 34, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 45px rgba(4, 6, 20, 0.5);
-    backdrop-filter: blur(18px);
+  margin: 24px auto;
+  width: min(1200px, calc(100% - 32px));
+  padding: 16px 22px;
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(8, 14, 34, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 45px rgba(4, 6, 20, 0.5);
+  backdrop-filter: blur(18px);
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .navLeft {
-    display: flex;
-    gap: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .navLink,
 .navAdminLogo {
-    text-decoration: none;
-    color: var(--text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
 }
 
 .navLink:hover,
 .navAdminLogo:hover {
-    color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 .navAdminLogoContainer {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navCta {
+  text-decoration: none;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #ff7ee9, #6a7dff);
+  color: #050914;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 26px rgba(106, 125, 255, 0.35);
+}
+
+@media (max-width: 768px) {
+  .navigation {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 18px;
+    width: calc(100% - 24px);
+  }
+
+  .navRight {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .navCta {
+    width: 100%;
+    text-align: center;
+  }
 }

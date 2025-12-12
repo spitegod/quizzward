@@ -98,4 +98,13 @@
   .card {
     padding: 24px 20px;
   }
+
+  .content {
+    width: calc(100% - 24px);
+    gap: 20px;
+  }
+
+  .table {
+    min-width: 100%;
+  }
 }
