@@ -27,7 +27,12 @@ class LobbyManager {
       questionStartTime: null,
       questionAnswers: new Map(),
       hostId,
-      createdAt: new Date()
+      createdAt: new Date(),
+      timePerQuestionMs: 30000,
+      pauseRemainingMs: null,
+      analytics: {
+        answers: []
+      }
     };
 
     this.lobbies.set(lobbyId, lobby);
@@ -138,6 +143,9 @@ class LobbyManager {
     });
     lobby.currentQuestionIndex = -1;
     lobby.gameState = 'starting';
+    lobby.analytics = { answers: [] }; // сбрасываем аналитику перед стартом
+    lobby.pauseRemainingMs = null;
+    lobby.timePerQuestionMs = 30000;
 
     for (const player of lobby.players.values()) {
       player.isReady = true;
@@ -284,6 +292,23 @@ class LobbyManager {
     const shouldMoveToNextQuestion = correctAnswersCount > 0;
     const attemptsLeft = 3 - (lobby.playerAttempts.get(userId) || 0);
 
+    // Записываем попытку в аналитику
+    if (lobby.analytics && lobby.currentQuestion) {
+      lobby.analytics.answers.push({
+        lobbyId,
+        questionId: lobby.currentQuestion.id || `question-${lobby.currentQuestionIndex + 1}`,
+        questionText: lobby.currentQuestion.questionText,
+        playerId: userId,
+        playerName: player.name,
+        isCorrect,
+        answerText,
+        answerIndex,
+        responseTime,
+        timestamp: Date.now(),
+        attemptNumber: currentAttempts + 1
+      });
+    }
+
     return {
       playerId: userId,
       isCorrect,
@@ -304,6 +329,67 @@ class LobbyManager {
         name: player.name,
         score: player.score
       }));
+  }
+
+  buildLiveStats(lobby) {
+    const answers = lobby.analytics?.answers || [];
+    const totalAnswers = answers.length;
+    const correctAnswers = answers.filter(a => a.isCorrect).length;
+    const avgResponseTimeMs = totalAnswers
+      ? Math.round(
+          answers.reduce((acc, curr) => acc + (curr.responseTime || 0), 0) /
+          totalAnswers
+        )
+      : 0;
+
+    const perQuestion = (lobby.questions || []).map((q, idx) => {
+      const questionId = q.id || `question-${idx + 1}`;
+      const qAnswers = answers.filter(a => a.questionId === questionId);
+      const qTotal = qAnswers.length;
+      const qCorrect = qAnswers.filter(a => a.isCorrect).length;
+      const qAvg = qTotal
+        ? Math.round(qAnswers.reduce((acc, curr) => acc + (curr.responseTime || 0), 0) / qTotal)
+        : 0;
+
+      return {
+        questionId,
+        questionText: q.questionText || q.question || `Вопрос ${idx + 1}`,
+        avgResponseTimeMs: qAvg,
+        accuracyPercent: qTotal ? Math.round((qCorrect / qTotal) * 100) : 0,
+        totalAnswers: qTotal
+      };
+    });
+
+    const currentQuestionId = lobby.currentQuestion?.id || `question-${lobby.currentQuestionIndex + 1}`;
+    const answeredIds = new Set(
+      answers
+        .filter(a => a.questionId === currentQuestionId)
+        .map(a => a.playerId)
+    );
+    const unansweredPlayers = Array.from(lobby.players.values())
+      .filter(p => !answeredIds.has(p.id))
+      .map(p => ({ id: p.id, name: p.name, score: p.score }));
+
+    return {
+      lobbyId: lobby.id,
+      totalAnswers,
+      totalPlayers: lobby.players.size,
+      avgResponseTimeMs,
+      accuracyPercent: totalAnswers ? Math.round((correctAnswers / totalAnswers) * 100) : 0,
+      leaderboard: this.getLeaderboard(lobby),
+      perQuestion,
+      unansweredPlayers
+    };
+  }
+
+  buildReport(lobby) {
+    const stats = this.buildLiveStats(lobby);
+    return {
+      ...stats,
+      answers: lobby.analytics?.answers || [],
+      startedAt: lobby.createdAt,
+      quizId: lobby.quizId
+    };
   }
 
   generateLobbyId() {
@@ -434,7 +520,8 @@ function setupWebSocket(server) {
 
           if (questionResult && questionResult.gameOver) {
             // Сразу показываем итоги, без countdown
-            io.to(lobbyId).emit('gameOver', { leaderboard: questionResult.leaderboard });
+            const stats = lobbyManager.buildLiveStats(currentLobby);
+            io.to(lobbyId).emit('gameOver', { leaderboard: questionResult.leaderboard, stats });
             setTimeout(() => {
               const finalLobby = lobbyManager.getLobby(lobbyId);
               if (finalLobby) {
@@ -449,20 +536,26 @@ function setupWebSocket(server) {
           }
 
           if (questionResult) {
+            const timeLimitMs = currentLobby.timePerQuestionMs || 30000;
             io.to(lobbyId).emit('question', {
               ...questionResult,
-              timeLimit: 30000,
+              timeLimit: timeLimitMs,
               questionStartTime: Date.now()
             });
 
+            const stats = lobbyManager.buildLiveStats(currentLobby);
+            io.to(lobbyId).emit('liveStats', stats);
+
             // Сохраняем таймер чтобы можно было отменить при правильном ответе
+            currentLobby.questionStartTime = Date.now();
+            currentLobby.pauseRemainingMs = null;
             currentLobby.questionTimer = setTimeout(() => {
               io.to(lobbyId).emit('nextQuestionCountdown', { countdown: 3 });
 
               currentLobby.countdownTimer = setTimeout(() => {
                 cycleQuestion();
               }, 3000);
-            }, 30000);
+            }, timeLimitMs);
           }
         };
 
@@ -509,6 +602,8 @@ function setupWebSocket(server) {
         });
 
         const isLastQuestion = lobby.currentQuestionIndex === lobby.questions.length - 1;
+        const stats = lobbyManager.buildLiveStats(lobby);
+        io.to(lobbyId).emit('liveStats', stats);
 
         // Если кто-то ответил правильно - переходим к следующему вопросу или завершаем игру
         if (result.shouldMoveToNextQuestion) {
@@ -525,7 +620,7 @@ function setupWebSocket(server) {
           // Если это последний вопрос - сразу показываем статистику всем
           if (isLastQuestion) {
             const leaderboard = lobbyManager.getLeaderboard(lobby);
-            io.to(lobbyId).emit('gameOver', { leaderboard });
+            io.to(lobbyId).emit('gameOver', { leaderboard, stats });
 
             setTimeout(() => {
               const finalLobby = lobbyManager.getLobby(lobbyId);
@@ -569,7 +664,8 @@ function setupWebSocket(server) {
           const questionResult = lobbyManager.getNextQuestion(lobbyId);
 
           if (questionResult && questionResult.gameOver) {
-            io.to(lobbyId).emit('gameOver', { leaderboard: questionResult.leaderboard });
+            const stats = lobbyManager.buildLiveStats(lobby);
+            io.to(lobbyId).emit('gameOver', { leaderboard: questionResult.leaderboard, stats });
             setTimeout(() => {
               lobby.players.forEach((_, playerId) => {
                 io.sockets.sockets.get(playerId)?.leave(lobbyId);
@@ -581,11 +677,32 @@ function setupWebSocket(server) {
           }
 
           if (questionResult) {
+            const timeLimitMs = lobby.timePerQuestionMs || 30000;
             io.to(lobbyId).emit('question', {
               ...questionResult,
-              timeLimit: 30000,
+              timeLimit: timeLimitMs,
               questionStartTime: Date.now()
             });
+
+            const stats = lobbyManager.buildLiveStats(lobby);
+            io.to(lobbyId).emit('liveStats', stats);
+
+            lobby.questionStartTime = Date.now();
+            lobby.pauseRemainingMs = null;
+            if (lobby.questionTimer) {
+              clearTimeout(lobby.questionTimer);
+            }
+            if (lobby.countdownTimer) {
+              clearTimeout(lobby.countdownTimer);
+            }
+            lobby.questionTimer = setTimeout(() => {
+              io.to(lobbyId).emit('nextQuestionCountdown', { countdown: 3 });
+              lobby.countdownTimer = setTimeout(() => {
+                if (lobby.cycleQuestion) {
+                  lobby.cycleQuestion();
+                }
+              }, 3000);
+            }, timeLimitMs);
           }
 
           callback({ success: true });
@@ -593,6 +710,246 @@ function setupWebSocket(server) {
       } catch (error) {
         console.error('Error getting next question:', error);
         callback({ success: false, error: 'Failed to get next question' });
+      }
+    });
+
+    socket.on('pauseGame', ({ lobbyId }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== socket.id) {
+          return callback?.({ success: false, error: 'Not authorized' });
+        }
+        if (lobby.gameState !== 'in_progress') {
+          return callback?.({ success: false, error: 'Игра не идёт' });
+        }
+
+        const elapsed = lobby.questionStartTime ? Date.now() - lobby.questionStartTime : 0;
+        const timeLimitMs = lobby.timePerQuestionMs || 30000;
+        const remaining = Math.max(timeLimitMs - elapsed, 0);
+        lobby.pauseRemainingMs = remaining;
+        lobby.gameState = 'paused';
+
+        if (lobby.questionTimer) {
+          clearTimeout(lobby.questionTimer);
+          lobby.questionTimer = null;
+        }
+        if (lobby.countdownTimer) {
+          clearTimeout(lobby.countdownTimer);
+          lobby.countdownTimer = null;
+        }
+
+        io.to(lobbyId).emit('gamePaused', { timeLeftMs: remaining });
+        callback?.({ success: true, timeLeftMs: remaining });
+      } catch (error) {
+        console.error('Error pausing game:', error);
+        callback?.({ success: false, error: 'Failed to pause game' });
+      }
+    });
+
+    socket.on('resumeGame', ({ lobbyId }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== socket.id) {
+          return callback?.({ success: false, error: 'Not authorized' });
+        }
+        if (lobby.gameState !== 'paused') {
+          return callback?.({ success: false, error: 'Игра не на паузе' });
+        }
+
+        const remaining = lobby.pauseRemainingMs ?? lobby.timePerQuestionMs ?? 30000;
+        lobby.gameState = 'in_progress';
+        lobby.questionStartTime = Date.now();
+
+        if (lobby.questionTimer) {
+          clearTimeout(lobby.questionTimer);
+        }
+        if (lobby.countdownTimer) {
+          clearTimeout(lobby.countdownTimer);
+        }
+
+        lobby.questionTimer = setTimeout(() => {
+          io.to(lobbyId).emit('nextQuestionCountdown', { countdown: 3 });
+          lobby.countdownTimer = setTimeout(() => {
+            if (lobby.cycleQuestion) {
+              lobby.cycleQuestion();
+            }
+          }, 3000);
+        }, remaining);
+
+        io.to(lobbyId).emit('gameResumed', { timeLeftMs: remaining });
+        callback?.({ success: true, timeLeftMs: remaining });
+      } catch (error) {
+        console.error('Error resuming game:', error);
+        callback?.({ success: false, error: 'Failed to resume game' });
+      }
+    });
+
+    socket.on('stopGame', ({ lobbyId }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== socket.id) {
+          return callback?.({ success: false, error: 'Not authorized' });
+        }
+
+        if (lobby.questionTimer) {
+          clearTimeout(lobby.questionTimer);
+          lobby.questionTimer = null;
+        }
+        if (lobby.countdownTimer) {
+          clearTimeout(lobby.countdownTimer);
+          lobby.countdownTimer = null;
+        }
+
+        lobby.gameState = 'finished';
+        const stats = lobbyManager.buildLiveStats(lobby);
+        const leaderboard = lobbyManager.getLeaderboard(lobby);
+        io.to(lobbyId).emit('gameOver', { leaderboard, stats, stopped: true });
+
+        setTimeout(() => {
+          const finalLobby = lobbyManager.getLobby(lobbyId);
+          if (finalLobby) {
+            finalLobby.players.forEach((_, playerId) => {
+              io.sockets.sockets.get(playerId)?.leave(lobbyId);
+              lobbyManager.leaveLobby(playerId);
+            });
+            lobbyManager.lobbies.delete(lobbyId);
+          }
+        }, 30000);
+
+        callback?.({ success: true });
+      } catch (error) {
+        console.error('Error stopping game:', error);
+        callback?.({ success: false, error: 'Failed to stop game' });
+      }
+    });
+
+    socket.on('kickPlayer', ({ lobbyId, targetPlayerId }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== socket.id) {
+          return callback?.({ success: false, error: 'Not authorized' });
+        }
+        if (targetPlayerId === socket.id) {
+          return callback?.({ success: false, error: 'Нельзя кикнуть себя' });
+        }
+
+        const target = lobby.players.get(targetPlayerId);
+        if (!target) {
+          return callback?.({ success: false, error: 'Игрок не найден' });
+        }
+
+        lobby.players.delete(targetPlayerId);
+        lobbyManager.userToLobby.delete(targetPlayerId);
+
+        const targetSocket = io.sockets.sockets.get(targetPlayerId);
+        if (targetSocket) {
+          targetSocket.leave(lobbyId);
+          targetSocket.emit('kicked', { lobbyId });
+        }
+
+        io.to(lobbyId).emit('playerLeft', { playerId: targetPlayerId });
+
+        if (lobby.players.size === 0) {
+          lobbyManager.lobbies.delete(lobbyId);
+        }
+
+        callback?.({ success: true });
+      } catch (error) {
+        console.error('Error kicking player:', error);
+        callback?.({ success: false, error: 'Failed to kick player' });
+      }
+    });
+
+    socket.on('revealAnswer', ({ lobbyId }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== socket.id) {
+          return callback?.({ success: false, error: 'Not authorized' });
+        }
+        if (!lobby.currentQuestion) {
+          return callback?.({ success: false, error: 'Нет активного вопроса' });
+        }
+
+        io.to(lobbyId).emit('revealAnswer', {
+          correctAnswer: lobby.currentQuestion.correctAnswer,
+          correctAnswerIndex: lobby.currentQuestion.correctAnswerIndex
+        });
+        callback?.({ success: true });
+      } catch (error) {
+        console.error('Error revealing answer:', error);
+        callback?.({ success: false, error: 'Failed to reveal answer' });
+      }
+    });
+
+    socket.on('adjustScore', ({ lobbyId, targetPlayerId, delta }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== socket.id) {
+          return callback?.({ success: false, error: 'Not authorized' });
+        }
+        const player = lobby.players.get(targetPlayerId);
+        if (!player) {
+          return callback?.({ success: false, error: 'Игрок не найден' });
+        }
+
+        const deltaNum = Number(delta) || 0;
+        player.score = (player.score || 0) + deltaNum;
+
+        io.to(lobbyId).emit('scoreUpdate', { playerId: targetPlayerId, score: player.score, delta: deltaNum });
+
+        const stats = lobbyManager.buildLiveStats(lobby);
+        io.to(lobbyId).emit('liveStats', stats);
+
+        callback?.({ success: true, score: player.score });
+      } catch (error) {
+        console.error('Error adjusting score:', error);
+        callback?.({ success: false, error: 'Failed to adjust score' });
+      }
+    });
+
+    socket.on('chatMessage', ({ lobbyId, message }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby) {
+          return callback?.({ success: false, error: 'Лобби не найдено' });
+        }
+
+        const trimmed = String(message || '').trim();
+        if (!trimmed) {
+          return callback?.({ success: false, error: 'Пустое сообщение' });
+        }
+        const sender = lobby.players.get(socket.id);
+        const payload = {
+          playerId: socket.id,
+          playerName: sender?.name || 'Участник',
+          message: trimmed,
+          timestamp: Date.now(),
+          isHost: socket.id === lobby.hostId
+        };
+
+        io.to(lobbyId).emit('chatMessage', payload);
+        callback?.({ success: true });
+      } catch (error) {
+        console.error('Error sending chat message:', error);
+        callback?.({ success: false, error: 'Failed to send message' });
+      }
+    });
+
+    socket.on('requestLobbyReport', ({ lobbyId }, callback) => {
+      try {
+        const lobby = lobbyManager.getLobby(lobbyId);
+        if (!lobby) {
+          return callback({ success: false, error: 'Лобби не найдено' });
+        }
+        if (lobby.hostId !== socket.id) {
+          return callback({ success: false, error: 'Только хост может выгружать отчёт' });
+        }
+
+        const report = lobbyManager.buildReport(lobby);
+        callback({ success: true, report });
+      } catch (error) {
+        console.error('Error building lobby report:', error);
+        callback({ success: false, error: 'Не удалось сформировать отчёт' });
       }
     });
 

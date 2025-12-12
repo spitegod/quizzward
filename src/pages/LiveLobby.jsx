@@ -5,7 +5,7 @@ import axios from 'axios';
 import WebSocketService from '../services/WebSocketService';
 import { getCurrentUser } from '../services/userService';
 import './LiveLobby.css';
-import { FaCopy, FaUser, FaUsers, FaPlay, FaSignOutAlt, FaUserCircle, FaClock, FaTrophy } from 'react-icons/fa';
+import { FaCopy, FaUser, FaUsers, FaPlay, FaSignOutAlt, FaUserCircle, FaClock, FaTrophy, FaDownload, FaChartBar } from 'react-icons/fa';
 
 const normalizeQuestions = (rawQuestions = []) => {
   return rawQuestions.map((q, index) => {
@@ -65,6 +65,13 @@ const LiveLobby = () => {
   const [isJoining, setIsJoining] = useState(false);
   const [attemptsLeft, setAttemptsLeft] = useState(3);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [liveStats, setLiveStats] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [revealedAnswer, setRevealedAnswer] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState(null);
+  const [kicked, setKicked] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -102,6 +109,17 @@ const LiveLobby = () => {
     WebSocketService.on('nextQuestionCountdown', handleNextQuestionCountdown);
     WebSocketService.on('gameOver', handleGameOver);
     WebSocketService.on('lobbyClosed', handleLobbyClosed);
+    WebSocketService.on('liveStats', handleLiveStats);
+    WebSocketService.on('gamePaused', handleGamePaused);
+    WebSocketService.on('gameResumed', handleGameResumed);
+    WebSocketService.on('revealAnswer', handleRevealAnswer);
+    WebSocketService.on('chatMessage', handleChatMessage);
+    WebSocketService.on('scoreUpdate', handleScoreUpdate);
+    WebSocketService.on('kicked', () => {
+      setKicked(true);
+      toast.error('Вы были кикнуты из лобби');
+      navigate('/dashboard');
+    });
 
     return () => {
       if (currentLobby) {
@@ -227,6 +245,7 @@ const LiveLobby = () => {
     setCountdown(null);
     setAttemptsLeft(3);
     setIsBlocked(false);
+    setRevealedAnswer(null);
   }, []);
 
   const handleAnswerResult = useCallback((data) => {
@@ -259,6 +278,9 @@ const LiveLobby = () => {
     console.log('Game over:', data);
     setGameState('finished');
     setLeaderboard(data.leaderboard || []);
+    if (data.stats) {
+      setLiveStats(data.stats);
+    }
     toast.success('Игра завершена!');
   }, []);
 
@@ -266,6 +288,41 @@ const LiveLobby = () => {
     toast.info('Лобби было закрыто');
     navigate('/dashboard');
   }, [navigate]);
+
+  const handleLiveStats = useCallback((data) => {
+    if (!data) return;
+    setLiveStats(data);
+    if (Array.isArray(data.leaderboard)) {
+      setLeaderboard(data.leaderboard);
+    }
+    if (!selectedPlayerId && Array.isArray(data.unansweredPlayers) && data.unansweredPlayers.length > 0) {
+      setSelectedPlayerId(data.unansweredPlayers[0].id);
+    }
+  }, [selectedPlayerId]);
+
+  const handleGamePaused = useCallback((data) => {
+    setGameState('paused');
+    setCountdown(null);
+    setTimeLeft(Math.max(0, Math.ceil((data?.timeLeftMs || 0) / 1000)));
+  }, []);
+
+  const handleGameResumed = useCallback((data) => {
+    setGameState('playing');
+    setTimeLeft(Math.max(0, Math.ceil((data?.timeLeftMs || 0) / 1000)));
+  }, []);
+
+  const handleRevealAnswer = useCallback((data) => {
+    setRevealedAnswer(data);
+  }, []);
+
+  const handleChatMessage = useCallback((msg) => {
+    setChatMessages(prev => [...prev.slice(-19), msg]);
+  }, []);
+
+  const handleScoreUpdate = useCallback((data) => {
+    if (!data || !data.playerId) return;
+    setLeaderboard(prev => prev.map(p => p.id === data.playerId ? { ...p, score: data.score } : p));
+  }, []);
 
   const handleCreateLobby = async () => {
     const trimmedName = playerName.trim();
@@ -290,6 +347,7 @@ const LiveLobby = () => {
       setIsHost(true);
       setGameState('lobby');
       setPlayers([{ id: WebSocketService.socket?.id, name: trimmedName, score: 0, isReady: true }]);
+      setLiveStats(null);
       toast.success('Лобби создано!');
     } catch (error) {
       console.error('Ошибка при создании лобби:', error);
@@ -319,6 +377,7 @@ const LiveLobby = () => {
         };
       });
 
+      setLiveStats(null);
       await WebSocketService.startGame(currentLobby.id, questions);
     } catch (error) {
       console.error('Ошибка при запуске игры:', error);
@@ -402,6 +461,318 @@ const LiveLobby = () => {
     }
   };
 
+  const handleExportCsv = async () => {
+    if (!currentLobby?.id) {
+      toast.error('Лобби не найдено');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const report = await WebSocketService.requestLobbyReport(currentLobby.id);
+      const answers = Array.isArray(report?.answers) ? report.answers : [];
+      if (answers.length === 0) {
+        toast.info('Пока нет ответов для экспорта');
+        return;
+      }
+
+      const headers = [
+        'lobby_id',
+        'quiz_id',
+        'player_id',
+        'player_name',
+        'question_id',
+        'question_text',
+        'answer',
+        'is_correct',
+        'response_time_ms',
+        'attempt',
+        'timestamp_iso'
+      ];
+
+      const escape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+      const csvRows = answers.map((row) => [
+        report.lobbyId,
+        report.quizId,
+        row.playerId,
+        row.playerName,
+        row.questionId,
+        row.questionText,
+        row.answerText,
+        row.isCorrect ? 'true' : 'false',
+        row.responseTime ?? '',
+        row.attemptNumber ?? 1,
+        row.timestamp ? new Date(row.timestamp).toISOString() : ''
+      ].map(escape).join(','));
+
+      const csvContent = [headers.map(escape).join(','), ...csvRows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `lobby-${currentLobby.id}-answers.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success('CSV экспортирован');
+    } catch (error) {
+      console.error('Ошибка при экспорте CSV:', error);
+      toast.error(error.message || 'Не удалось выгрузить CSV');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handlePauseGame = async () => {
+    if (!currentLobby?.id) return;
+    try {
+      await WebSocketService.pauseGame(currentLobby.id);
+      toast.info('Игра поставлена на паузу');
+    } catch (error) {
+      toast.error(error.message || 'Не удалось поставить на паузу');
+    }
+  };
+
+  const handleResumeGame = async () => {
+    if (!currentLobby?.id) return;
+    try {
+      await WebSocketService.resumeGame(currentLobby.id);
+      toast.success('Игра возобновлена');
+    } catch (error) {
+      toast.error(error.message || 'Не удалось возобновить игру');
+    }
+  };
+
+  const handleStopGame = async () => {
+    if (!currentLobby?.id) return;
+    try {
+      await WebSocketService.stopGame(currentLobby.id);
+      toast.info('Игра остановлена');
+    } catch (error) {
+      toast.error(error.message || 'Не удалось остановить игру');
+    }
+  };
+
+  const handleRevealAnswerClick = async () => {
+    if (!currentLobby?.id) return;
+    try {
+      await WebSocketService.revealAnswer(currentLobby.id);
+    } catch (error) {
+      toast.error(error.message || 'Не удалось показать ответ');
+    }
+  };
+
+  const handleSendChat = async () => {
+    if (!currentLobby?.id) return;
+    const trimmed = chatInput.trim();
+    if (!trimmed) return;
+    try {
+      await WebSocketService.sendChatMessage(currentLobby.id, trimmed);
+      setChatInput('');
+    } catch (error) {
+      toast.error(error.message || 'Не удалось отправить сообщение');
+    }
+  };
+
+  const handleAdjustScore = async (delta) => {
+    if (!currentLobby?.id || !selectedPlayerId) return;
+    try {
+      await WebSocketService.adjustScore(currentLobby.id, selectedPlayerId, delta);
+      toast.success(delta > 0 ? 'Бонус выдан' : 'Штраф применён');
+    } catch (error) {
+      toast.error(error.message || 'Не удалось изменить счёт');
+    }
+  };
+
+  const handleKickPlayer = async (playerId) => {
+    if (!currentLobby?.id) return;
+    try {
+      await WebSocketService.kickPlayer(currentLobby.id, playerId);
+      toast.info('Игрок кикнут');
+    } catch (error) {
+      toast.error(error.message || 'Не удалось кикнуть игрока');
+    }
+  };
+
+  const renderLiveStatsPanel = () => {
+    if (!isHost) return null;
+
+    const accuracy = liveStats?.accuracyPercent ?? 0;
+    const avgTime = liveStats?.avgResponseTimeMs ?? 0;
+    const totalAnswers = liveStats?.totalAnswers ?? 0;
+    const unanswered = liveStats?.unansweredPlayers || [];
+
+    return (
+      <div className="live-admin-panel">
+        <div className="panel-header">
+          <div className="panel-title">
+            <FaChartBar />
+            <div>
+              <p className="panel-subtitle">Live Mode</p>
+              <strong>Панель хоста</strong>
+            </div>
+          </div>
+          <div className="panel-actions">
+            <button
+              onClick={gameState === 'paused' ? handleResumeGame : handlePauseGame}
+              className="btn-secondary panel-export"
+              disabled={!['playing', 'paused'].includes(gameState)}
+            >
+              {gameState === 'paused' ? 'Продолжить' : 'Пауза'}
+            </button>
+            <button
+              onClick={handleRevealAnswerClick}
+              className="btn-secondary panel-export"
+              disabled={!currentQuestion}
+            >
+              Показать ответ
+            </button>
+            <button
+              onClick={handleStopGame}
+              className="btn-danger panel-export"
+            >
+              Стоп раунда
+            </button>
+            <button
+              onClick={handleExportCsv}
+              className="btn-secondary panel-export"
+              disabled={isExporting}
+            >
+              <FaDownload />
+              {isExporting ? 'Готовим CSV...' : 'Экспорт CSV'}
+            </button>
+          </div>
+        </div>
+
+        <div className="stat-grid">
+          <div className="stat-card">
+            <p className="stat-label">Среднее время ответа</p>
+            <div className="stat-value">{avgTime} мс</div>
+            <p className="stat-hint">По всем попыткам</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">% правильных</p>
+            <div className="stat-value">{accuracy}%</div>
+            <p className="stat-hint">Точность участников</p>
+          </div>
+          <div className="stat-card">
+            <p className="stat-label">Ответов получено</p>
+            <div className="stat-value">{totalAnswers}</div>
+            <p className="stat-hint">Суммарно по лобби</p>
+          </div>
+        </div>
+
+        <div className="inline-two">
+          <div className="mini-block">
+            <p className="stat-label">Не ответили</p>
+            <div className="chips">
+              {unanswered.length === 0 ? (
+                <span className="chip muted">Все ответили</span>
+              ) : unanswered.map((p) => (
+                <span key={p.id} className="chip">
+                  {p.name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mini-block">
+            <p className="stat-label">Штраф/бонус</p>
+            <div className="adjust-row">
+              <select
+                value={selectedPlayerId || ''}
+                onChange={(e) => setSelectedPlayerId(e.target.value)}
+              >
+                <option value="">Выберите игрока</option>
+                {players.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <div className="adjust-buttons">
+                <button onClick={() => handleAdjustScore(-1)} className="btn-secondary" disabled={!selectedPlayerId}>-1</button>
+                <button onClick={() => handleAdjustScore(1)} className="btn-secondary" disabled={!selectedPlayerId}>+1</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mini-block">
+          <p className="stat-label">Чат / объявление</p>
+          <div className="chat-box">
+            <div className="chat-messages">
+              {chatMessages.map((m, idx) => (
+                <div key={`${m.timestamp}-${idx}`} className="chat-row">
+                  <span className="chat-name">{m.isHost ? 'Хост' : m.playerName}:</span>
+                  <span>{m.message}</span>
+                </div>
+              ))}
+              {chatMessages.length === 0 && <div className="chat-empty">Сообщений пока нет</div>}
+            </div>
+            <div className="chat-input">
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Сообщение для всех..."
+              />
+              <button onClick={handleSendChat} className="btn-secondary">Отправить</button>
+            </div>
+          </div>
+        </div>
+
+        {Array.isArray(liveStats?.perQuestion) && liveStats.perQuestion.length > 0 && (
+          <div className="question-stats">
+            <div className="question-stats-header">По вопросам</div>
+            <div className="question-stats-list">
+              {liveStats.perQuestion.map((q) => (
+                <div key={q.questionId} className="question-stat-item">
+                  <div className="question-title">{q.questionText}</div>
+                  <div className="question-metrics">
+                    <span>{q.accuracyPercent}% точных</span>
+                    <span>{q.avgResponseTimeMs} мс</span>
+                    <span>{q.totalAnswers} ответов</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderChatPanel = (showInput = isHost) => {
+    if (chatMessages.length === 0 && !showInput) return null;
+
+    return (
+      <div className="chat-panel">
+        <div className="chat-panel-header">
+          <span>Чат / объявления</span>
+        </div>
+        <div className="chat-messages">
+          {chatMessages.length === 0 && <div className="chat-empty">Сообщений пока нет</div>}
+          {chatMessages.map((m, idx) => (
+            <div key={`${m.timestamp}-${idx}`} className="chat-row">
+              <span className="chat-name">{m.isHost ? 'Хост' : m.playerName}:</span>
+              <span>{m.message}</span>
+            </div>
+          ))}
+        </div>
+        {showInput && (
+          <div className="chat-input">
+            <input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Сообщение для всех..."
+            />
+            <button onClick={handleSendChat} className="btn-secondary">Отправить</button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="live-lobby-container">
@@ -444,16 +815,18 @@ const LiveLobby = () => {
 
             <div className="form-group">
               <label htmlFor="maxPlayers">Максимум игроков:</label>
-              <select
-                id="maxPlayers"
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(parseInt(e.target.value))}
-                className="form-control"
-              >
-                {[2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20].map(num => (
-                  <option key={num} value={num}>{num} игроков</option>
-                ))}
-              </select>
+              <div className="select-wrapper">
+                <select
+                  id="maxPlayers"
+                  value={maxPlayers}
+                  onChange={(e) => setMaxPlayers(parseInt(e.target.value))}
+                  className="form-control select"
+                >
+                  {[2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20].map(num => (
+                    <option key={num} value={num}>{num} игроков</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <button onClick={handleCreateLobby} className="btn-primary btn-large">
@@ -496,7 +869,10 @@ const LiveLobby = () => {
     return (
       <div className="live-lobby-container">
         <div className="lobby-waiting">
-          <h1>{quiz.title}</h1>
+          <div className="lobby-hero">
+            <span className="eyebrow">Live lobby</span>
+            <h1>{quiz.title}</h1>
+          </div>
 
           <div className="lobby-code-section">
             <h2>Код лобби:</h2>
@@ -526,30 +902,43 @@ const LiveLobby = () => {
                   <span className="player-name">{player.name}</span>
                   {player.id === currentLobby.hostId && <span className="badge">Хост</span>}
                   {player.id === WebSocketService.socket?.id && <span className="badge-you">Вы</span>}
+                  {isHost && player.id !== WebSocketService.socket?.id && (
+                    <button
+                      className="kick-btn"
+                      onClick={() => handleKickPlayer(player.id)}
+                      title="Кикнуть игрока"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           </div>
 
-          {isHost && (
-            <button
-              onClick={handleStartGame}
-              className="btn-primary btn-large"
-              disabled={players.length < 1}
-            >
-              <FaPlay /> Начать игру
-            </button>
-          )}
-
-          {!isHost && (
-            <div className="waiting-message">
-              <p>Ожидание начала игры...</p>
-            </div>
-          )}
-
-          <button onClick={handleLeaveGame} className="btn-danger">
-            <FaSignOutAlt /> Покинуть лобби
-          </button>
+          <div className="lobby-actions">
+            {isHost ? (
+              <div className="lobby-cta">
+                <button
+                  onClick={handleStartGame}
+                  className="btn-cta"
+                  disabled={players.length < 1}
+                >
+                  <FaPlay /> Начать игру
+                </button>
+                <button onClick={handleLeaveGame} className="btn-ghost">
+                  <FaSignOutAlt /> Покинуть лобби
+                </button>
+              </div>
+            ) : (
+              <div className="waiting-message">
+                <p>Ожидание начала игры...</p>
+                <button onClick={handleLeaveGame} className="btn-ghost" style={{ marginTop: '10px' }}>
+                  <FaSignOutAlt /> Покинуть лобби
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -592,6 +981,11 @@ const LiveLobby = () => {
 
           <div className="question-section">
             <h2>{currentQuestion?.questionText}</h2>
+            {revealedAnswer && (
+              <div className="reveal-banner">
+                Правильный ответ: {revealedAnswer.correctAnswer}
+              </div>
+            )}
           </div>
 
           <div className="answer-options">
@@ -624,11 +1018,61 @@ const LiveLobby = () => {
             {isBlocked && !hasAnswered && <p className="blocked-message">❌ Попытки исчерпаны</p>}
           </div>
 
+          {renderLiveStatsPanel()}
+          {renderChatPanel(false)}
+
           {answerResult && answerResult.isCorrect && (
             <div className="answer-feedback correct">
               <p>✅ Правильно! +{answerResult.points} {answerResult.points === 1 ? 'балл' : 'балла'}</p>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === 'paused') {
+    return (
+      <div className="live-lobby-container">
+        <div className="game-screen paused">
+          <div className="game-header">
+            <div className="question-progress">Игра на паузе</div>
+            <div className="player-score">
+              <FaTrophy /> {myScore}
+            </div>
+          </div>
+
+          <div className="timer-section">
+            <FaClock />
+            <div className="timer-bar">
+              <div
+                className="timer-fill"
+                style={{ width: `${(timeLeft / 30) * 100}%` }}
+              ></div>
+            </div>
+            <span className="time-left">{timeLeft}с</span>
+          </div>
+
+          <div className="question-section">
+            <h2>{currentQuestion?.questionText}</h2>
+            {revealedAnswer && (
+              <div className="reveal-banner">
+                Правильный ответ: {revealedAnswer.correctAnswer}
+              </div>
+            )}
+          </div>
+
+          <div className="paused-overlay">
+            <p>Раунд на паузе</p>
+            {isHost && (
+              <button onClick={handleResumeGame} className="btn-primary btn-large">
+                Продолжить
+              </button>
+            )}
+          </div>
+
+          {renderLiveStatsPanel()}
+          {renderChatPanel(false)}
         </div>
       </div>
     );
@@ -645,6 +1089,8 @@ const LiveLobby = () => {
               Пропустить ожидание
             </button>
           )}
+          {renderLiveStatsPanel()}
+          {renderChatPanel(false)}
         </div>
       </div>
     );
@@ -680,6 +1126,9 @@ const LiveLobby = () => {
               ))}
             </div>
           </div>
+
+          {renderLiveStatsPanel()}
+          {renderChatPanel(false)}
 
           <button onClick={() => navigate('/dashboard')} className="btn-primary btn-large">
             Вернуться к викторинам

@@ -14,6 +14,13 @@ class WebSocketService {
       onGameOver: null,
       onLobbyClosed: null,
       onNextQuestionCountdown: null,
+      onLiveStats: null,
+      onGamePaused: null,
+      onGameResumed: null,
+      onRevealAnswer: null,
+      onChatMessage: null,
+      onScoreUpdate: null,
+      onKicked: null,
       onError: null,
       onLobbyJoined: null,      // New callback for successful lobby join
       onLobbyError: null,       // New callback for lobby errors
@@ -31,6 +38,13 @@ class WebSocketService {
     this.handleGameOver = this.handleGameOver.bind(this);
     this.handleLobbyClosed = this.handleLobbyClosed.bind(this);
     this.handleNextQuestionCountdown = this.handleNextQuestionCountdown.bind(this);
+    this.handleLiveStats = this.handleLiveStats.bind(this);
+    this.handleGamePaused = this.handleGamePaused.bind(this);
+    this.handleGameResumed = this.handleGameResumed.bind(this);
+    this.handleRevealAnswer = this.handleRevealAnswer.bind(this);
+    this.handleChatMessage = this.handleChatMessage.bind(this);
+    this.handleScoreUpdate = this.handleScoreUpdate.bind(this);
+    this.handleKicked = this.handleKicked.bind(this);
     this.handleError = this.handleError.bind(this);
     this.handleLobbyJoined = this.handleLobbyJoined.bind(this);
     this.handleLobbyError = this.handleLobbyError.bind(this);
@@ -85,6 +99,13 @@ class WebSocketService {
       this.socket.on('gameOver', this.handleGameOver);
       this.socket.on('lobbyClosed', this.handleLobbyClosed);
       this.socket.on('nextQuestionCountdown', this.handleNextQuestionCountdown);
+      this.socket.on('liveStats', this.handleLiveStats);
+      this.socket.on('gamePaused', this.handleGamePaused);
+      this.socket.on('gameResumed', this.handleGameResumed);
+      this.socket.on('revealAnswer', this.handleRevealAnswer);
+      this.socket.on('chatMessage', this.handleChatMessage);
+      this.socket.on('scoreUpdate', this.handleScoreUpdate);
+      this.socket.on('kicked', this.handleKicked);
       this.socket.on('lobbyJoined', this.handleLobbyJoined);
       this.socket.on('lobbyError', this.handleLobbyError);
       this.socket.on('connect_error', this.handleConnectionError);
@@ -160,6 +181,34 @@ class WebSocketService {
     if (this.callbacks && this.callbacks.onNextQuestionCountdown) this.callbacks.onNextQuestionCountdown(data);
   }
 
+  handleLiveStats(data) {
+    if (this.callbacks && this.callbacks.onLiveStats) this.callbacks.onLiveStats(data);
+  }
+
+  handleGamePaused(data) {
+    if (this.callbacks && this.callbacks.onGamePaused) this.callbacks.onGamePaused(data);
+  }
+
+  handleGameResumed(data) {
+    if (this.callbacks && this.callbacks.onGameResumed) this.callbacks.onGameResumed(data);
+  }
+
+  handleRevealAnswer(data) {
+    if (this.callbacks && this.callbacks.onRevealAnswer) this.callbacks.onRevealAnswer(data);
+  }
+
+  handleChatMessage(data) {
+    if (this.callbacks && this.callbacks.onChatMessage) this.callbacks.onChatMessage(data);
+  }
+
+  handleScoreUpdate(data) {
+    if (this.callbacks && this.callbacks.onScoreUpdate) this.callbacks.onScoreUpdate(data);
+  }
+
+  handleKicked(data) {
+    if (this.callbacks && this.callbacks.onKicked) this.callbacks.onKicked(data);
+  }
+
   handleLobbyJoined(data) {
     if (this.callbacks && this.callbacks.onLobbyJoined) {
       this.callbacks.onLobbyJoined(data);
@@ -214,6 +263,13 @@ class WebSocketService {
       'answerResult': 'onAnswerResult',
       'gameOver': 'onGameOver',
       'nextQuestionCountdown': 'onNextQuestionCountdown',
+      'liveStats': 'onLiveStats',
+      'gamePaused': 'onGamePaused',
+      'gameResumed': 'onGameResumed',
+      'revealAnswer': 'onRevealAnswer',
+      'chatMessage': 'onChatMessage',
+      'scoreUpdate': 'onScoreUpdate',
+      'kicked': 'onKicked',
       
       // Connection events
       'error': 'onError',
@@ -568,10 +624,130 @@ class WebSocketService {
     });
   }
 
-  // Utility method to check connection status
-  isConnected() {
-    return this.socket && this.socket.connected;
+  /**
+   * Request lobby report (host only)
+   * @param {string} lobbyId
+   * @returns {Promise<object>} report with stats and raw answers
+   */
+  requestLobbyReport(lobbyId) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error('Not connected to WebSocket server'));
+        return;
+      }
+
+      this.socket.emit('requestLobbyReport', { lobbyId }, (response) => {
+        if (response && response.success) {
+          resolve(response.report);
+        } else {
+          reject(new Error(response?.error || 'Не удалось сформировать отчёт'));
+        }
+      });
+    });
   }
+
+  pauseGame(lobbyId) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error('Not connected to WebSocket server'));
+        return;
+      }
+
+      this.socket.emit('pauseGame', { lobbyId }, (response) => {
+        if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error(response?.error || 'Не удалось поставить на паузу'));
+        }
+      });
+    });
+  }
+
+  resumeGame(lobbyId) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error('Not connected to WebSocket server'));
+        return;
+      }
+
+      this.socket.emit('resumeGame', { lobbyId }, (response) => {
+        if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error(response?.error || 'Не удалось возобновить игру'));
+        }
+      });
+    });
+  }
+
+  stopGame(lobbyId) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error('Not connected to WebSocket server'));
+        return;
+      }
+
+      this.socket.emit('stopGame', { lobbyId }, (response) => {
+        if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error(response?.error || 'Не удалось остановить игру'));
+        }
+      });
+    });
+  }
+
+  revealAnswer(lobbyId) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error('Not connected to WebSocket server'));
+        return;
+      }
+
+      this.socket.emit('revealAnswer', { lobbyId }, (response) => {
+        if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error(response?.error || 'Не удалось показать ответ'));
+        }
+      });
+    });
+  }
+
+  adjustScore(lobbyId, targetPlayerId, delta) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error('Not connected to WebSocket server'));
+        return;
+      }
+
+      this.socket.emit('adjustScore', { lobbyId, targetPlayerId, delta }, (response) => {
+        if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error(response?.error || 'Не удалось обновить счёт'));
+        }
+      });
+    });
+  }
+
+  kickPlayer(lobbyId, targetPlayerId) {
+    return new Promise((resolve, reject) => {
+      if (!this.isConnected()) {
+        reject(new Error('Not connected to WebSocket server'));
+        return;
+      }
+
+      this.socket.emit('kickPlayer', { lobbyId, targetPlayerId }, (response) => {
+        if (response && response.success) {
+          resolve(response);
+        } else {
+          reject(new Error(response?.error || 'Не удалось кикнуть игрока'));
+        }
+      });
+    });
+  }
+
 }
 
 // Export a singleton instance
